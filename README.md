@@ -26,7 +26,7 @@ https://mangohk.github.io/Reading-record/
 2. `reading-api.js` already points at the deployed Web App:
 
 ```js
-var API_URL = 'https://script.google.com/macros/s/AKfycbza6iNOxnJllZTa0YOef3WbUrtxpnHAUijWPn4pzsKjpz_4WhzrWib0c65-bSToKXpA/exec';
+var API_URL = 'https://script.google.com/macros/s/AKfycbyXNbBRDP0ad6ESbqjCBgBib28Gxs8WWCIaIVf0y-frm0AR73HwrgS-R-A7o3oLua6W/exec';
 ```
 
 3. Log in as a student, add a book, and confirm a new row appears on the sheet.

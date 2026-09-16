@@ -2,7 +2,7 @@
   'use strict';
 
   // Apps Script Web App URL (Anyone access) — same public /exec pattern as teaching-games high scores.
-  var API_URL = 'https://script.google.com/macros/s/AKfycbza6iNOxnJllZTa0YOef3WbUrtxpnHAUijWPn4pzsKjpz_4WhzrWib0c65-bSToKXpA/exec';
+  var API_URL = 'https://script.google.com/macros/s/AKfycbyXNbBRDP0ad6ESbqjCBgBib28Gxs8WWCIaIVf0y-frm0AR73HwrgS-R-A7o3oLua6W/exec';
 
   function queryString(params) {
     var parts = [];
