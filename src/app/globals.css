@@ -7,8 +7,8 @@
   --accent-soft: #95d5b2;
   --panel: rgba(255, 255, 255, 0.72);
   --border: rgba(45, 106, 79, 0.18);
-  --font-display: "Fraunces", "Songti TC", "Noto Serif TC", serif;
-  --font-body: "Noto Sans TC", "PingFang HK", "Microsoft JhengHei", sans-serif;
+  --font-display: var(--font-display-loaded), "Songti TC", "Noto Serif TC", serif;
+  --font-body: var(--font-body-loaded), "PingFang HK", "Microsoft JhengHei", sans-serif;
 }
 
 * {
@@ -111,6 +111,19 @@ main {
   font-size: 0.85rem;
   color: var(--muted);
   margin-top: 1.5rem;
+}
+
+.warn {
+  color: #8a3b12;
+  background: rgba(232, 160, 96, 0.2);
+  border: 1px solid rgba(138, 59, 18, 0.25);
+  padding: 0.65rem 0.85rem;
+  margin: 0.75rem 0;
+}
+
+button.btn {
+  cursor: pointer;
+  font: inherit;
 }
 
 code {

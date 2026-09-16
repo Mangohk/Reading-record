@@ -1,18 +1,18 @@
+import type { Role } from "@/lib/domain/types";
+import {
+  ensureUserAndProfile,
+  type GoogleIdentity,
+} from "@/lib/auth/ensure-user";
 import { BOOTSTRAP_ADMIN_EMAIL, resolveRole } from "@/lib/auth/roles";
 import { getDataAccessLayer } from "@/lib/dal";
-import type { Role } from "@/lib/domain/types";
 
-export interface SessionIdentity {
-  email: string;
-  googleSub: string;
-  displayName: string;
-}
+export type { GoogleIdentity as SessionIdentity };
 
 /**
- * Sketch of role resolution for a signed-in Google user.
- * Full NextAuth / OAuth session wiring comes in a later step.
+ * Resolve role for a signed-in Google user (read-only; does not create rows).
+ * Prefer `ensureUserAndProfile` on login to create/ensure User + Profile.
  */
-export async function resolveUserRole(identity: SessionIdentity): Promise<{
+export async function resolveUserRole(identity: GoogleIdentity): Promise<{
   role: Role | null;
   userId: string | null;
   isBootstrapAdmin: boolean;
@@ -28,3 +28,6 @@ export async function resolveUserRole(identity: SessionIdentity): Promise<{
       identity.email.trim().toLowerCase() === BOOTSTRAP_ADMIN_EMAIL.toLowerCase(),
   };
 }
+
+/** First-login helper used by Auth.js callbacks. */
+export { ensureUserAndProfile };
