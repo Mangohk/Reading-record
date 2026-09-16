@@ -54,6 +54,139 @@
             vertical-align: middle;
         }
         th.teacher-sort-th.is-active .sort-indicator { opacity: 1; }
+
+        /* Teacher portal dark theme (scoped; student UI stays light) */
+        html.teacher-dark {
+            color-scheme: dark;
+        }
+        html.teacher-dark body {
+            background-color: #151a21;
+            color: #e8eaed;
+        }
+        html.teacher-dark #appHeader {
+            background-color: #1c2330;
+            border-color: #2e3644;
+            box-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
+        }
+        html.teacher-dark #headerTitle,
+        html.teacher-dark #displayStudentName {
+            color: #e8eaed;
+        }
+        html.teacher-dark #displayStudentClass {
+            color: #9aa3b2;
+        }
+        html.teacher-dark #logoutBtn {
+            color: #9aa3b2;
+        }
+        html.teacher-dark #logoutBtn:hover {
+            color: #f87171;
+        }
+        html.teacher-dark #teacherMain .bg-white {
+            background-color: #1c2330 !important;
+        }
+        html.teacher-dark #teacherMain .border-gray-100,
+        html.teacher-dark #teacherMain .border-gray-200 {
+            border-color: #2e3644 !important;
+        }
+        html.teacher-dark #teacherMain .bg-gray-50,
+        html.teacher-dark #teacherMain .bg-gray-50\/50 {
+            background-color: #242b38 !important;
+        }
+        html.teacher-dark #teacherMain .text-gray-800,
+        html.teacher-dark #teacherMain .text-gray-700 {
+            color: #e8eaed !important;
+        }
+        html.teacher-dark #teacherMain .text-gray-600 {
+            color: #c5cad3 !important;
+        }
+        html.teacher-dark #teacherMain .text-gray-500,
+        html.teacher-dark #teacherMain .text-gray-400 {
+            color: #9aa3b2 !important;
+        }
+        html.teacher-dark #teacherMain .divide-gray-100 > :not([hidden]) ~ :not([hidden]) {
+            border-color: #2e3644;
+        }
+        html.teacher-dark #teacherMain input,
+        html.teacher-dark #teacherMain select {
+            background-color: #151a21;
+            border-color: #3a4354;
+            color: #e8eaed;
+        }
+        html.teacher-dark #teacherMain input::placeholder {
+            color: #6b7385;
+        }
+        html.teacher-dark #teacherMain input:focus,
+        html.teacher-dark #teacherMain select:focus {
+            border-color: #6366f1;
+            background-color: #12171f;
+        }
+        html.teacher-dark #teacherMain .teacher-view-btn.is-active {
+            background-color: #2a3441 !important;
+            color: #a5b4fc !important;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+        }
+        html.teacher-dark #teacherMain .teacher-view-btn:not(.is-active) {
+            color: #9aa3b2 !important;
+        }
+        html.teacher-dark #teacherMain .teacher-view-btn:not(.is-active):hover {
+            color: #e8eaed !important;
+        }
+        html.teacher-dark #teacherMain .teacher-theme-btn.is-active {
+            background-color: #2a3441 !important;
+            color: #e8eaed !important;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+        }
+        html.teacher-dark #teacherMain .teacher-theme-btn:not(.is-active) {
+            color: #9aa3b2 !important;
+        }
+        html.teacher-dark #teacherMain .bg-green-100 {
+            background-color: rgba(34, 197, 94, 0.15) !important;
+        }
+        html.teacher-dark #teacherMain .bg-indigo-100 {
+            background-color: rgba(99, 102, 241, 0.2) !important;
+        }
+        html.teacher-dark #teacherMain .text-indigo-700 {
+            color: #a5b4fc !important;
+        }
+        html.teacher-dark #teacherMain tr.teacher-table-row:hover {
+            background-color: #242b38;
+        }
+        html.teacher-dark #teacherMain .teacher-soft-delete-btn {
+            color: #6b7385;
+        }
+        html.teacher-dark #teacherMain .teacher-soft-delete-btn:hover {
+            color: #f87171;
+            background-color: rgba(248, 113, 113, 0.12);
+        }
+        html.teacher-dark #teacherMain th.teacher-sort-th:hover,
+        html.teacher-dark #teacherMain th.teacher-sort-th.is-active {
+            color: #a5b4fc;
+        }
+        html.teacher-dark #confirmModalContent {
+            background-color: #1c2330;
+        }
+        html.teacher-dark #confirmTitle {
+            color: #e8eaed;
+        }
+        html.teacher-dark #confirmMessage {
+            color: #9aa3b2;
+        }
+        html.teacher-dark #confirmCancelBtn {
+            background-color: #2a3441;
+            color: #c5cad3;
+        }
+        html.teacher-dark #confirmCancelBtn:hover {
+            background-color: #343e4f;
+        }
+        html.teacher-dark ::-webkit-scrollbar-track {
+            background: #1c2330;
+        }
+        html.teacher-dark ::-webkit-scrollbar-thumb {
+            background: #3a4354;
+        }
+        html.teacher-dark ::-webkit-scrollbar-thumb:hover {
+            background: #4b5568;
+        }
     </style>
 </head>
 <body class="text-gray-800 antialiased min-h-screen flex flex-col bg-gray-50 selection:bg-indigo-200 selection:text-indigo-900">
@@ -245,6 +378,14 @@
                 </div>
             </div>
             <div class="flex gap-4 items-center flex-wrap justify-end">
+                <div class="inline-flex rounded-xl border border-gray-200 bg-gray-50 p-1" role="group" aria-label="Teacher theme">
+                    <button type="button" id="teacherThemeLightBtn" class="teacher-theme-btn px-3 py-2 rounded-lg text-sm font-bold transition-colors bg-white text-primary shadow-sm is-active" data-theme="light" title="Light mode">
+                        <i class="fa-solid fa-sun mr-1"></i> Light
+                    </button>
+                    <button type="button" id="teacherThemeDarkBtn" class="teacher-theme-btn px-3 py-2 rounded-lg text-sm font-bold transition-colors text-gray-500 hover:text-gray-700" data-theme="dark" title="Dark mode">
+                        <i class="fa-solid fa-moon mr-1"></i> Dark
+                    </button>
+                </div>
                 <div class="text-right">
                     <div class="text-xs text-gray-500 font-bold uppercase">Total School Pages</div>
                     <div class="text-2xl font-bold text-primary" id="teacherTotalPages">0</div>
@@ -258,7 +399,7 @@
         <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 md:p-5 flex flex-col gap-4">
             <div class="flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
                 <div class="inline-flex rounded-xl border border-gray-200 bg-gray-50 p-1 self-start" role="group" aria-label="Teacher view mode">
-                    <button type="button" id="teacherViewStudentsBtn" class="teacher-view-btn px-4 py-2 rounded-lg text-sm font-bold transition-colors bg-white text-primary shadow-sm" data-view="students">
+                    <button type="button" id="teacherViewStudentsBtn" class="teacher-view-btn px-4 py-2 rounded-lg text-sm font-bold transition-colors bg-white text-primary shadow-sm is-active" data-view="students">
                         <i class="fa-solid fa-users mr-1"></i> Students
                     </button>
                     <button type="button" id="teacherViewBooksBtn" class="teacher-view-btn px-4 py-2 rounded-lg text-sm font-bold transition-colors text-gray-500 hover:text-gray-700" data-view="books">
@@ -454,6 +595,7 @@
             // (same pattern as teaching-games High Scores).
 
             const USER_AUTH_KEY = 'studentReadingLog_SheetsUser';
+            const TEACHER_THEME_KEY = 'teacherDashboard_theme';
             const STUDENT_LOGIN_SUBTITLE = 'Log books to the class Google Sheet.';
             // Soft-deleted rows use Timestamp −20y; listings hide anything older than 10y.
             const ACTIVE_RECORD_YEARS = 10;
@@ -531,6 +673,8 @@
                 teacherTotalPages: document.getElementById('teacherTotalPages'),
                 activeStudentsCount: document.getElementById('activeStudentsCount'),
                 teacherExportAllBtn: document.getElementById('teacherExportAllBtn'),
+                teacherThemeLightBtn: document.getElementById('teacherThemeLightBtn'),
+                teacherThemeDarkBtn: document.getElementById('teacherThemeDarkBtn'),
                 teacherViewStudentsBtn: document.getElementById('teacherViewStudentsBtn'),
                 teacherViewBooksBtn: document.getElementById('teacherViewBooksBtn'),
                 teacherFiltersStudents: document.getElementById('teacherFiltersStudents'),
@@ -685,6 +829,54 @@
                 els.studentLoginForm.reset();
                 els.teacherLoginForm.reset();
                 document.getElementById('loginSubtitle').textContent = STUDENT_LOGIN_SUBTITLE;
+                applyTeacherTheme(false);
+            }
+
+            function getTeacherThemePreference() {
+                try {
+                    return localStorage.getItem(TEACHER_THEME_KEY) === 'dark' ? 'dark' : 'light';
+                } catch (err) {
+                    return 'light';
+                }
+            }
+
+            function setTeacherThemePreference(theme) {
+                const next = theme === 'dark' ? 'dark' : 'light';
+                try {
+                    localStorage.setItem(TEACHER_THEME_KEY, next);
+                } catch (err) {
+                    // Ignore quota / private-mode failures; in-memory UI still updates.
+                }
+                return next;
+            }
+
+            function updateTeacherThemeToggleChrome(theme) {
+                const isDark = theme === 'dark';
+                if (!els.teacherThemeLightBtn || !els.teacherThemeDarkBtn) return;
+                els.teacherThemeLightBtn.classList.toggle('is-active', !isDark);
+                els.teacherThemeLightBtn.classList.toggle('bg-white', !isDark);
+                els.teacherThemeLightBtn.classList.toggle('text-primary', !isDark);
+                els.teacherThemeLightBtn.classList.toggle('shadow-sm', !isDark);
+                els.teacherThemeLightBtn.classList.toggle('text-gray-500', isDark);
+                els.teacherThemeDarkBtn.classList.toggle('is-active', isDark);
+                els.teacherThemeDarkBtn.classList.toggle('bg-white', isDark);
+                els.teacherThemeDarkBtn.classList.toggle('text-primary', isDark);
+                els.teacherThemeDarkBtn.classList.toggle('shadow-sm', isDark);
+                els.teacherThemeDarkBtn.classList.toggle('text-gray-500', !isDark);
+            }
+
+            function applyTeacherTheme(enabled) {
+                const theme = getTeacherThemePreference();
+                const useDark = !!enabled && theme === 'dark';
+                document.documentElement.classList.toggle('teacher-dark', useDark);
+                updateTeacherThemeToggleChrome(theme);
+            }
+
+            function setTeacherTheme(theme) {
+                const next = setTeacherThemePreference(theme);
+                const teacherActive = !!(currentUser && currentUser.role === 'teacher');
+                applyTeacherTheme(teacherActive);
+                return next;
             }
 
             function handleSuccessfulLogin() {
@@ -703,6 +895,7 @@
                     els.teacherMain.classList.add('flex');
                     els.appMain.classList.add('hidden');
                     els.appMain.classList.remove('flex');
+                    applyTeacherTheme(true);
                     resetTeacherDashboardState();
                     loadTeacherFromSheet();
                 } else {
@@ -717,6 +910,7 @@
                     els.appMain.classList.add('flex');
                     els.teacherMain.classList.add('hidden');
                     els.teacherMain.classList.remove('flex');
+                    applyTeacherTheme(false);
                     refreshStudentLibrary();
                 }
             }
@@ -1111,10 +1305,12 @@
                 const isStudents = teacherViewMode === 'students';
                 els.teacherFiltersStudents.classList.toggle('hidden', !isStudents);
                 els.teacherFiltersBooks.classList.toggle('hidden', isStudents);
+                els.teacherViewStudentsBtn.classList.toggle('is-active', isStudents);
                 els.teacherViewStudentsBtn.classList.toggle('bg-white', isStudents);
                 els.teacherViewStudentsBtn.classList.toggle('text-primary', isStudents);
                 els.teacherViewStudentsBtn.classList.toggle('shadow-sm', isStudents);
                 els.teacherViewStudentsBtn.classList.toggle('text-gray-500', !isStudents);
+                els.teacherViewBooksBtn.classList.toggle('is-active', !isStudents);
                 els.teacherViewBooksBtn.classList.toggle('bg-white', !isStudents);
                 els.teacherViewBooksBtn.classList.toggle('text-primary', !isStudents);
                 els.teacherViewBooksBtn.classList.toggle('shadow-sm', !isStudents);
@@ -1447,7 +1643,7 @@
 
                 studentArray.forEach(student => {
                     const row = document.createElement('tr');
-                    row.className = 'hover:bg-gray-50 transition-colors';
+                    row.className = 'teacher-table-row hover:bg-gray-50 transition-colors';
                     const latestLabel = student.latestDate.getTime() === 0 ? '—' : student.latestDate.toLocaleDateString();
                     row.innerHTML =
                         '<td class="p-4 text-center font-bold text-gray-700">' + escapeHtml(student.class) + '</td>' +
@@ -1493,7 +1689,7 @@
 
                 bookArray.forEach(book => {
                     const row = document.createElement('tr');
-                    row.className = 'hover:bg-gray-50 transition-colors';
+                    row.className = 'teacher-table-row hover:bg-gray-50 transition-colors';
                     const dateLabel = book.latestDate.getTime() === 0 ? '—' : book.latestDate.toLocaleDateString();
                     const canDelete = book.sheetRow != null && !isNaN(book.sheetRow);
                     row.innerHTML =
@@ -1674,6 +1870,9 @@
                     exportDataToExcel(studentLibrary, filename);
                 });
                 els.teacherExportAllBtn.addEventListener('click', exportTeacherVisibleRows);
+
+                els.teacherThemeLightBtn.addEventListener('click', () => setTeacherTheme('light'));
+                els.teacherThemeDarkBtn.addEventListener('click', () => setTeacherTheme('dark'));
 
                 els.teacherViewStudentsBtn.addEventListener('click', () => setTeacherViewMode('students'));
                 els.teacherViewBooksBtn.addEventListener('click', () => setTeacherViewMode('books'));
