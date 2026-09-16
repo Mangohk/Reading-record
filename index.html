@@ -738,7 +738,7 @@
             }
 
             async function loadTeacherFromSheet() {
-                els.teacherTableBody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-gray-400">Loading student records...</td></tr>';
+                els.teacherTableBody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-gray-400">Loading student records...</td></tr>';
                 try {
                     const records = await ReadingRecordAPI.listRecords({ limit: 200 });
                     allSheetBooks = mapActiveSheetRecords(records);
