@@ -1,0 +1,1188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Reading Record - Cloud Edition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700&display=swap');
+        
+        body { font-family: 'Inter', sans-serif; }
+        .font-display { font-family: 'Playfair Display', serif; }
+        .bg-primary { background-color: #4F46E5; }
+        .text-primary { color: #4F46E5; }
+        
+        .animate-pop-in { animation: popIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .animate-fade-in { animation: fadeIn 0.3s ease-in forwards; }
+        
+        @keyframes popIn {
+            0% { opacity: 0; transform: scale(0.95) translateY(10px); }
+            100% { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        @keyframes fadeIn {
+            0% { opacity: 0; }
+            100% { opacity: 1; }
+        }
+        
+        .book-spine {
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            box-shadow: inset -4px 0 10px rgba(0,0,0,0.1), inset 4px 0 10px rgba(255,255,255,0.2), 4px 4px 10px rgba(0,0,0,0.3);
+        }
+        
+        /* Custom thick scrollbar for easier touch/mouse use */
+        ::-webkit-scrollbar { width: 10px; height: 10px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #c7c7c7; border-radius: 5px; }
+        ::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+    </style>
+</head>
+<body class="text-gray-800 antialiased min-h-screen flex flex-col bg-gray-50 selection:bg-indigo-200 selection:text-indigo-900">
+    
+    <div id="loginScreen" class="fixed inset-0 bg-[#F0F9FF] z-[100] flex items-center justify-center p-4 transition-opacity duration-300">
+        <div class="bg-white rounded-[2rem] shadow-2xl overflow-hidden w-full max-w-md border border-gray-100 flex flex-col animate-pop-in">
+            <div class="bg-primary px-8 py-6 text-white text-center">
+                <div class="bg-white/20 h-16 w-16 rounded-full flex items-center justify-center mx-auto mb-3 shadow-inner">
+                    <i class="fa-solid fa-cloud-arrow-up text-3xl"></i>
+                </div>
+                <h2 class="text-3xl font-display font-bold">Cloud Record</h2>
+                <p class="text-indigo-100 mt-1" id="loginSubtitle">Please log in to your reading record.</p>
+            </div>
+            
+            <!-- Student Login Form -->
+            <form id="studentLoginForm" class="p-8 flex flex-col gap-5">
+                <div>
+                    <label for="studentName" class="block text-sm font-bold text-gray-700 mb-2">Student Name <span class="text-red-500">*</span></label>
+                    <input type="text" id="studentName" required placeholder="e.g. Chan Tai Man" 
+                        class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-primary focus:ring-0 transition-colors text-gray-800 bg-gray-50 focus:bg-white font-medium">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label for="studentClass" class="block text-sm font-bold text-gray-700 mb-2">Class <span class="text-red-500">*</span></label>
+                        <div class="relative">
+                            <select id="studentClass" required class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-primary focus:ring-0 transition-colors text-gray-800 bg-gray-50 focus:bg-white font-medium appearance-none cursor-pointer">
+                                <option value="" disabled selected>Select</option>
+                                <!-- Options injected by JS -->
+                            </select>
+                            <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-gray-500">
+                                <i class="fa-solid fa-chevron-down"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="studentClassNo" class="block text-sm font-bold text-gray-700 mb-2">Class No. <span class="text-red-500">*</span></label>
+                        <div class="relative">
+                            <select id="studentClassNo" required class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-primary focus:ring-0 transition-colors text-gray-800 bg-gray-50 focus:bg-white font-medium appearance-none cursor-pointer">
+                                <option value="" disabled selected>Select</option>
+                                <!-- Options injected by JS -->
+                            </select>
+                            <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-gray-500">
+                                <i class="fa-solid fa-chevron-down"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <button type="submit" id="studentLoginBtn" class="mt-4 bg-primary hover:bg-indigo-700 text-white px-8 py-3.5 rounded-xl font-bold transition-all shadow-md flex items-center justify-center gap-2 text-lg disabled:opacity-50 disabled:cursor-not-allowed">
+                    <i class="fa-solid fa-arrow-right-to-bracket"></i> Enter Library
+                </button>
+                <div class="text-center mt-2">
+                    <button type="button" id="switchToTeacherBtn" class="text-sm font-medium text-gray-400 hover:text-primary transition-colors">Are you a teacher? Access Portal</button>
+                </div>
+            </form>
+
+            <!-- Teacher Login Form -->
+            <form id="teacherLoginForm" class="p-8 flex flex-col gap-5 hidden">
+                <div>
+                    <label for="teacherPassword" class="block text-sm font-bold text-gray-700 mb-2">Master Password <span class="text-red-500">*</span></label>
+                    <input type="password" id="teacherPassword" required placeholder="Enter password (hint: admin)" 
+                        class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-primary focus:ring-0 transition-colors text-gray-800 bg-gray-50 focus:bg-white font-medium">
+                </div>
+                <button type="submit" class="mt-4 bg-green-600 hover:bg-green-700 text-white px-8 py-3.5 rounded-xl font-bold transition-all shadow-md flex items-center justify-center gap-2 text-lg">
+                    <i class="fa-solid fa-unlock-keyhole"></i> Access Dashboard
+                </button>
+                <div class="text-center mt-2">
+                    <button type="button" id="switchToStudentBtn" class="text-sm font-medium text-gray-400 hover:text-primary transition-colors">Back to Student Login</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <header id="appHeader" class="bg-white border-b border-gray-200 sticky top-0 z-40 hidden shadow-sm">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="bg-primary text-white p-2 rounded-lg" id="headerIcon">
+                    <i class="fa-solid fa-book-open"></i>
+                </div>
+                <h1 class="text-xl font-display font-bold text-gray-800 hidden sm:block" id="headerTitle">My Reading Record</h1>
+            </div>
+            
+            <div class="flex items-center gap-4">
+                <div class="text-right hidden md:block">
+                    <div id="displayStudentName" class="font-bold text-sm text-gray-800"></div>
+                    <div id="displayStudentClass" class="text-xs text-gray-500"></div>
+                </div>
+                <img id="studentAvatarImg" src="" alt="Avatar" class="w-10 h-10 rounded-full border-2 border-indigo-100 bg-indigo-50 hidden">
+                
+                <!-- Student Actions -->
+                <div id="studentActions" class="flex gap-2">
+                    <button id="exportExcelBtn" class="bg-green-600 hover:bg-green-700 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-md transition-transform hover:scale-105 active:scale-95" title="Export My Records">
+                        <i class="fa-solid fa-file-excel"></i>
+                    </button>
+                    <button id="navAddBtn" class="bg-primary hover:bg-indigo-700 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-md transition-transform hover:scale-105 active:scale-95" title="Add Book">
+                        <i class="fa-solid fa-plus"></i>
+                    </button>
+                </div>
+
+                <button id="logoutBtn" class="text-gray-400 hover:text-red-500 transition-colors p-2 ml-2" title="Log Out">
+                    <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main id="appMain" class="flex-grow max-w-6xl w-full mx-auto p-4 flex-col gap-6 hidden">
+        
+        <!-- Stats Dashboard -->
+        <section class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col md:flex-row gap-6 items-center">
+            <div class="relative w-24 h-24 flex-shrink-0">
+                <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="40" fill="transparent" stroke="#f3f4f6" stroke-width="8"></circle>
+                    <circle id="levelProgressCircle" cx="50" cy="50" r="40" fill="transparent" stroke="#4F46E5" stroke-width="8" stroke-dasharray="251.2" stroke-dashoffset="251.2" stroke-linecap="round" class="transition-all duration-1000 ease-out"></circle>
+                </svg>
+                <div class="absolute inset-0 flex flex-col items-center justify-center">
+                    <span class="text-xs text-gray-500 font-bold uppercase tracking-wider">Level</span>
+                    <span id="levelNumberDisplay" class="text-xl font-bold text-gray-800">1</span>
+                </div>
+            </div>
+            
+            <div class="flex-grow flex flex-col w-full">
+                <div class="flex justify-between items-end mb-2">
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-800" id="rankTitleDisplay">Beginner</h2>
+                        <p class="text-sm text-gray-500" id="pagesToNextLevel">Read more to level up!</p>
+                    </div>
+                </div>
+                <div class="w-full bg-gray-100 h-3 rounded-full overflow-hidden">
+                    <div id="levelProgressBar" class="h-full bg-gradient-to-r from-indigo-500 to-purple-500 w-0 transition-all duration-1000 ease-out rounded-full"></div>
+                </div>
+            </div>
+            
+            <div class="flex gap-4 w-full md:w-auto md:border-l border-gray-100 md:pl-6">
+                <div class="bg-indigo-50 rounded-xl p-3 flex-1 md:w-28 text-center border border-indigo-100">
+                    <div class="text-xs text-indigo-600 font-bold uppercase mb-1">Books</div>
+                    <div class="text-2xl font-display font-bold text-gray-800" id="totalBooksDisplay">0</div>
+                </div>
+                <div class="bg-blue-50 rounded-xl p-3 flex-1 md:w-28 text-center border border-blue-100">
+                    <div class="text-xs text-blue-600 font-bold uppercase mb-1">Pages</div>
+                    <div class="text-2xl font-display font-bold text-gray-800" id="pagesReadDisplay">0</div>
+                </div>
+                <div class="bg-green-50 rounded-xl p-3 flex-1 md:w-28 text-center border border-green-100">
+                    <div class="text-xs text-green-600 font-bold uppercase mb-1">Reviews</div>
+                    <div class="text-2xl font-display font-bold text-gray-800" id="totalReviewsDisplay">0</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Library Header -->
+        <div class="flex justify-between items-center mt-4">
+            <h3 class="text-xl font-bold text-gray-800 font-display">My Library</h3>
+            <div class="bg-gray-200 p-1 rounded-lg flex">
+                <button id="viewShelfBtn" class="px-4 py-1.5 rounded-md text-sm font-bold bg-white shadow-sm text-primary transition-all">
+                    <i class="fa-solid fa-bars-staggered"></i> Shelf
+                </button>
+                <button id="viewListBtn" class="px-4 py-1.5 rounded-md text-sm font-bold text-gray-500 hover:text-gray-700 transition-all">
+                    <i class="fa-solid fa-list"></i> List
+                </button>
+            </div>
+        </div>
+
+        <div class="bg-white border-x border-t border-gray-200 rounded-t-3xl min-h-[400px] w-full flex flex-col relative shadow-inner overflow-hidden">
+            <!-- Empty State -->
+            <div id="emptyState" class="absolute inset-0 flex flex-col items-center justify-center p-8 text-center hidden">
+                <div class="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center text-gray-300 text-5xl mb-4">
+                    <i class="fa-solid fa-book-journal-whills"></i>
+                </div>
+                <h4 class="text-lg font-bold text-gray-700 mb-2">Your library is empty</h4>
+                <p class="text-gray-500 text-sm max-w-xs mb-6">Start reading and log your first book to build your virtual bookshelf!</p>
+                <button id="emptyAddBtn" class="bg-primary hover:bg-indigo-700 text-white px-6 py-2.5 rounded-xl font-bold transition-all shadow-md">
+                    <i class="fa-solid fa-plus mr-2"></i> Log First Book
+                </button>
+            </div>
+
+            <div id="shelfView" class="w-full flex flex-col pb-8"></div>
+            <div id="listView" class="w-full hidden flex-col gap-3 p-4 bg-gray-50/50 min-h-full"></div>
+        </div>
+    </main>
+
+    <main id="teacherMain" class="flex-grow max-w-6xl w-full mx-auto p-4 flex-col gap-6 hidden">
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col md:flex-row gap-6 items-center justify-between">
+            <div class="flex items-center gap-4">
+                <div class="w-16 h-16 bg-green-100 text-green-600 rounded-2xl flex items-center justify-center text-2xl shadow-inner">
+                    <i class="fa-solid fa-chalkboard-user"></i>
+                </div>
+                <div>
+                   <h2 class="text-2xl font-bold font-display text-gray-800">Teacher Dashboard</h2>
+                   <p class="text-gray-500">Live overview of school reading records</p>
+                </div>
+            </div>
+            <div class="flex gap-4 items-center">
+                <div class="text-right">
+                    <div class="text-xs text-gray-500 font-bold uppercase">Total School Pages</div>
+                    <div class="text-2xl font-bold text-primary" id="teacherTotalPages">0</div>
+                </div>
+                <button id="teacherExportAllBtn" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl font-bold shadow-md transition-all flex items-center gap-2 transform active:scale-95">
+                    <i class="fa-solid fa-file-excel"></i> Export All Records
+                </button>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mt-2">
+            <div class="p-4 bg-gray-50 border-b border-gray-100 flex justify-between items-center">
+                <h3 class="font-bold text-gray-700">Student Leaderboard & Activity</h3>
+                <div class="text-sm text-gray-500" id="activeStudentsCount">0 Active Students</div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm text-gray-600">
+                    <thead class="bg-white border-b border-gray-100 text-gray-800">
+                        <tr>
+                            <th class="p-4 font-bold w-20 text-center">Class</th>
+                            <th class="p-4 font-bold w-20 text-center">No.</th>
+                            <th class="p-4 font-bold">Student Name</th>
+                            <th class="p-4 font-bold text-center">Books</th>
+                            <th class="p-4 font-bold text-center">Pages</th>
+                            <th class="p-4 font-bold text-right">Latest Entry</th>
+                        </tr>
+                    </thead>
+                    <tbody id="teacherTableBody" class="divide-y divide-gray-100 bg-white">
+                        <!-- Injected by JS -->
+                        <tr><td colspan="6" class="p-8 text-center text-gray-400">Loading student records...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <div id="bookModal" class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-50 hidden flex-col items-center justify-end md:justify-center p-0 md:p-4 transition-opacity duration-300 opacity-0">
+        <div id="bookModalContent" class="bg-white rounded-t-3xl md:rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden transform md:scale-95 transition-transform duration-300 flex flex-col max-h-[90vh]">
+            
+            <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50 sticky top-0 z-10">
+                <h3 class="text-xl font-bold text-gray-800" id="modalTitle">
+                    <i class="fa-solid fa-book-medical text-primary mr-2"></i> Log a Book
+                </h3>
+                <button id="closeModalBtn" class="text-gray-400 hover:text-gray-600 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-200 transition-colors">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <div class="overflow-y-auto p-6 custom-scrollbar">
+                <form id="bookForm" class="flex flex-col gap-4">
+                    <input type="hidden" id="bookId">
+                    
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">Book Title <span class="text-red-500">*</span></label>
+                        <input type="text" id="bookTitle" required class="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 focus:border-primary focus:ring-0 transition-colors text-gray-800 bg-gray-50 focus:bg-white font-medium" placeholder="Enter title">
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-1">Author <span class="text-red-500">*</span></label>
+                            <input type="text" id="bookAuthor" required class="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 focus:border-primary focus:ring-0 transition-colors text-gray-800 bg-gray-50 focus:bg-white font-medium" placeholder="Enter author">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-1">Genre</label>
+                            <div class="relative">
+                                <select id="bookGenre" class="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 focus:border-primary focus:ring-0 transition-colors text-gray-800 bg-gray-50 focus:bg-white font-medium appearance-none cursor-pointer">
+                                    <option value="Fiction">Fiction</option>
+                                    <option value="Non-Fiction">Non-Fiction</option>
+                                    <option value="Science Fiction">Science Fiction</option>
+                                    <option value="Fantasy">Fantasy</option>
+                                    <option value="Mystery">Mystery</option>
+                                    <option value="Biography">Biography</option>
+                                    <option value="History">History</option>
+                                </select>
+                                <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-gray-500">
+                                    <i class="fa-solid fa-chevron-down"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-1">Total Pages <span class="text-red-500">*</span></label>
+                            <input type="number" id="bookPages" required min="1" class="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 focus:border-primary focus:ring-0 transition-colors text-gray-800 bg-gray-50 focus:bg-white font-medium">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-1">Date Finished <span class="text-red-500">*</span></label>
+                            <input type="date" id="bookDate" required class="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 focus:border-primary focus:ring-0 transition-colors text-gray-800 bg-gray-50 focus:bg-white font-medium">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Your Rating <span class="text-red-500">*</span></label>
+                        <div id="starRatingContainer" class="flex gap-2 text-3xl justify-center bg-gray-50 py-3 rounded-xl border-2 border-gray-100">
+                            <i class="fa-solid fa-star text-gray-300 cursor-pointer transition-transform" data-rating="1"></i>
+                            <i class="fa-solid fa-star text-gray-300 cursor-pointer transition-transform" data-rating="2"></i>
+                            <i class="fa-solid fa-star text-gray-300 cursor-pointer transition-transform" data-rating="3"></i>
+                            <i class="fa-solid fa-star text-gray-300 cursor-pointer transition-transform" data-rating="4"></i>
+                            <i class="fa-solid fa-star text-gray-300 cursor-pointer transition-transform" data-rating="5"></i>
+                        </div>
+                        <input type="hidden" id="bookRating" required>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">Review / Notes</label>
+                        <textarea id="bookReview" rows="3" class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-primary focus:ring-0 transition-colors text-gray-800 bg-gray-50 focus:bg-white font-medium resize-none" placeholder="What did you think of the book?"></textarea>
+                    </div>
+                </form>
+            </div>
+
+            <div class="p-4 border-t border-gray-100 bg-gray-50 flex gap-3">
+                <button type="button" id="deleteBookBtn" class="px-4 py-3 rounded-xl text-red-500 hover:bg-red-50 font-bold transition-colors hidden">
+                    <i class="fa-solid fa-trash"></i>
+                </button>
+                <button type="button" id="cancelBtn" class="flex-1 px-4 py-3 rounded-xl text-gray-600 font-bold bg-gray-200 hover:bg-gray-300 transition-colors">Cancel</button>
+                <button type="submit" form="bookForm" id="saveBookBtn" class="flex-1 px-4 py-3 rounded-xl text-white font-bold bg-primary hover:bg-indigo-700 transition-colors shadow-md flex items-center justify-center gap-2">Save Book</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="confirmModal" class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-[250] hidden items-center justify-center p-4 transition-opacity duration-300 opacity-0">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden transform scale-95 transition-transform duration-300" id="confirmModalContent">
+            <div class="p-6 text-center">
+                <div class="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+                <h3 class="text-xl font-bold text-gray-800 mb-2" id="confirmTitle">Confirm Action</h3>
+                <p class="text-gray-500 mb-6" id="confirmMessage">Are you sure you want to proceed?</p>
+                <div class="flex gap-3">
+                    <button id="confirmCancelBtn" class="flex-1 px-4 py-3 rounded-xl text-gray-600 font-bold bg-gray-100 hover:bg-gray-200 transition-colors">Cancel</button>
+                    <button id="confirmActionBtn" class="flex-1 px-4 py-3 rounded-xl text-white font-bold bg-red-500 hover:bg-red-600 transition-colors shadow-md">Yes, proceed</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white px-6 py-3 rounded-full shadow-2xl transition-all duration-300 translate-y-20 opacity-0 z-[200] flex items-center gap-3 font-medium">
+        <i class="fa-solid fa-circle-check text-green-400"></i>
+        <span id="toastMsg">Action successful</span>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, collection, addDoc, updateDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            
+            // --- Constants & State ---
+            const USER_AUTH_KEY = 'studentReadingLog_CloudUser';
+            
+            let currentUser = null; // Can be a student obj or { role: 'teacher' }
+            let authUser = null; // Firebase auth user
+            let db = null;
+            let appId = '';
+            
+            let allCloudBooks = []; // Master list fetched from Firestore
+            let studentLibrary = []; // Filtered list for current student
+            
+            let currentViewMode = 'shelf'; 
+            let currentRating = 0;
+            let editingId = null; // Holds Firestore doc.id
+            let unsubscribeSnapshot = null;
+
+            const schoolClasses = [
+                '1F', '1H', '1L', '2F', '2H', '2L', '2G',
+                '3F', '3H', '3L', '3G', '4F', '4H', '4L', '4G',
+                '5F', '5H', '5L', '5G', '6F', '6H', '6L', '6G'
+            ];
+
+            const bookColors = [
+                ['bg-red-500', 'bg-red-600', 'bg-red-700'],
+                ['bg-blue-500', 'bg-blue-600', 'bg-blue-700'],
+                ['bg-green-500', 'bg-green-600', 'bg-green-700'],
+                ['bg-yellow-500', 'bg-yellow-600', 'bg-yellow-700'],
+                ['bg-purple-500', 'bg-purple-600', 'bg-purple-700'],
+                ['bg-indigo-500', 'bg-indigo-600', 'bg-indigo-700'],
+                ['bg-pink-500', 'bg-pink-600', 'bg-pink-700'],
+                ['bg-teal-500', 'bg-teal-600', 'bg-teal-700'],
+                ['bg-orange-500', 'bg-orange-600', 'bg-orange-700']
+            ];
+
+            const ranks = [
+                { name: 'Beginner', threshold: 0 },
+                { name: 'Page Turner', threshold: 100 },
+                { name: 'Bookworm', threshold: 500 },
+                { name: 'Avid Reader', threshold: 1500 },
+                { name: 'Literary Explorer', threshold: 3000 },
+                { name: 'Library Master', threshold: 5000 }
+            ];
+
+            // --- DOM Elements Collection ---
+            const els = {
+                // Main Layout
+                appHeader: document.getElementById('appHeader'),
+                appMain: document.getElementById('appMain'),
+                teacherMain: document.getElementById('teacherMain'),
+                
+                // Login
+                loginScreen: document.getElementById('loginScreen'),
+                studentLoginForm: document.getElementById('studentLoginForm'),
+                teacherLoginForm: document.getElementById('teacherLoginForm'),
+                studentNameInput: document.getElementById('studentName'),
+                studentClassSelect: document.getElementById('studentClass'),
+                studentClassNoSelect: document.getElementById('studentClassNo'),
+                teacherPasswordInput: document.getElementById('teacherPassword'),
+                switchToTeacherBtn: document.getElementById('switchToTeacherBtn'),
+                switchToStudentBtn: document.getElementById('switchToStudentBtn'),
+                studentLoginBtn: document.getElementById('studentLoginBtn'),
+                
+                // Header
+                displayStudentName: document.getElementById('displayStudentName'),
+                displayStudentClass: document.getElementById('displayStudentClass'),
+                logoutBtn: document.getElementById('logoutBtn'),
+                studentAvatarImg: document.getElementById('studentAvatarImg'),
+                headerTitle: document.getElementById('headerTitle'),
+                headerIcon: document.getElementById('headerIcon'),
+                studentActions: document.getElementById('studentActions'),
+                
+                // Student Library Elements
+                viewShelfBtn: document.getElementById('viewShelfBtn'),
+                viewListBtn: document.getElementById('viewListBtn'),
+                emptyState: document.getElementById('emptyState'),
+                shelfView: document.getElementById('shelfView'),
+                listView: document.getElementById('listView'),
+                navAddBtn: document.getElementById('navAddBtn'),
+                emptyAddBtn: document.getElementById('emptyAddBtn'),
+                
+                // Teacher Elements
+                teacherTableBody: document.getElementById('teacherTableBody'),
+                teacherTotalPages: document.getElementById('teacherTotalPages'),
+                activeStudentsCount: document.getElementById('activeStudentsCount'),
+                teacherExportAllBtn: document.getElementById('teacherExportAllBtn'),
+                
+                // Export
+                exportExcelBtn: document.getElementById('exportExcelBtn'),
+                
+                // Modal Forms
+                bookModal: document.getElementById('bookModal'),
+                bookModalContent: document.getElementById('bookModalContent'),
+                closeModalBtn: document.getElementById('closeModalBtn'),
+                cancelBtn: document.getElementById('cancelBtn'),
+                bookForm: document.getElementById('bookForm'),
+                deleteBookBtn: document.getElementById('deleteBookBtn'),
+                saveBookBtn: document.getElementById('saveBookBtn'),
+                stars: document.querySelectorAll('#starRatingContainer i'),
+                ratingInput: document.getElementById('bookRating'),
+                
+                // Confirm Modals & Toasts
+                confirmModal: document.getElementById('confirmModal'),
+                confirmModalContent: document.getElementById('confirmModalContent'),
+                confirmTitle: document.getElementById('confirmTitle'),
+                confirmMessage: document.getElementById('confirmMessage'),
+                confirmCancelBtn: document.getElementById('confirmCancelBtn'),
+                confirmActionBtn: document.getElementById('confirmActionBtn'),
+                toast: document.getElementById('toast'),
+                toastMsg: document.getElementById('toastMsg')
+            };
+
+            async function init() {
+                populateLoginDropdowns();
+                attachEventListeners();
+                document.getElementById('bookDate').valueAsDate = new Date(); // Default date
+
+                try {
+                    // Firebase Setup
+                    appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+                    const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+                    
+                    const app = initializeApp(firebaseConfig);
+                    const auth = getAuth(app);
+                    db = getFirestore(app);
+
+                    els.studentLoginBtn.textContent = "Connecting to Cloud...";
+                    els.studentLoginBtn.disabled = true;
+
+                    // Authentication
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        const cred = await signInWithCustomToken(auth, __initial_auth_token);
+                        authUser = cred.user;
+                    } else {
+                        const cred = await signInAnonymously(auth);
+                        authUser = cred.user;
+                    }
+
+                    els.studentLoginBtn.innerHTML = '<i class="fa-solid fa-arrow-right-to-bracket"></i> Enter Library';
+                    els.studentLoginBtn.disabled = false;
+
+                    // Start Data Sync from Firestore
+                    startDataListener();
+                    
+                    // Check local session
+                    checkLoginState();
+
+                } catch (error) {
+                    console.error("Firebase Initialization Error:", error);
+                    showToast("Error connecting to cloud database.", "error");
+                    els.studentLoginBtn.textContent = "Connection Error";
+                }
+            }
+
+            function populateLoginDropdowns() {
+                schoolClasses.forEach(c => {
+                    els.studentClassSelect.appendChild(new Option(c, c));
+                });
+                for (let i = 1; i <= 33; i++) {
+                    els.studentClassNoSelect.appendChild(new Option(i, i));
+                }
+            }
+
+            function checkLoginState() {
+                const storedUser = localStorage.getItem(USER_AUTH_KEY);
+                if (storedUser) {
+                    try {
+                        currentUser = JSON.parse(storedUser);
+                        handleSuccessfulLogin();
+                    } catch(e) {
+                        showLoginScreen();
+                    }
+                } else {
+                    showLoginScreen();
+                }
+            }
+
+            function showLoginScreen() {
+                els.loginScreen.classList.remove('hidden');
+                els.loginScreen.classList.add('flex');
+                els.appHeader.classList.add('hidden');
+                els.appMain.classList.add('hidden');
+                els.appMain.classList.remove('flex');
+                els.teacherMain.classList.add('hidden');
+                els.teacherMain.classList.remove('flex');
+                
+                els.studentLoginForm.reset();
+                els.teacherLoginForm.reset();
+            }
+
+            function handleSuccessfulLogin() {
+                els.loginScreen.classList.add('hidden');
+                els.loginScreen.classList.remove('flex');
+                els.appHeader.classList.remove('hidden');
+                
+                if (currentUser.role === 'teacher') {
+                    // Setup Teacher View
+                    els.headerTitle.textContent = "Teacher Portal";
+                    els.headerIcon.innerHTML = '<i class="fa-solid fa-chalkboard-user"></i>';
+                    els.displayStudentName.textContent = "Admin";
+                    els.displayStudentClass.textContent = "Teacher Access";
+                    els.studentAvatarImg.classList.add('hidden');
+                    els.studentActions.classList.add('hidden'); // Hide student buttons
+                    
+                    els.teacherMain.classList.remove('hidden');
+                    els.teacherMain.classList.add('flex');
+                    els.appMain.classList.add('hidden');
+                    els.appMain.classList.remove('flex');
+                    
+                    renderTeacherDashboard();
+                } else {
+                    // Setup Student View
+                    els.headerTitle.textContent = "My Reading Record";
+                    els.headerIcon.innerHTML = '<i class="fa-solid fa-book-open"></i>';
+                    els.displayStudentName.textContent = currentUser.name;
+                    els.displayStudentClass.textContent = `Class ${currentUser.studentClass} (${currentUser.classNo})`;
+                    els.studentAvatarImg.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(currentUser.name)}&backgroundColor=e2e8f0,f8fafc`;
+                    els.studentAvatarImg.classList.remove('hidden');
+                    els.studentActions.classList.remove('hidden');
+                    
+                    els.appMain.classList.remove('hidden');
+                    els.appMain.classList.add('flex');
+                    els.teacherMain.classList.add('hidden');
+                    els.teacherMain.classList.remove('flex');
+                    
+                    updateStudentUI();
+                }
+            }
+
+            function performLogout() {
+                currentUser = null;
+                localStorage.removeItem(USER_AUTH_KEY);
+                showLoginScreen();
+            }
+
+            function startDataListener() {
+                if (!authUser || !db) return;
+                
+                const booksRef = collection(db, 'artifacts', appId, 'public', 'data', 'books');
+                
+                // Subscribe to real-time updates for all books
+                unsubscribeSnapshot = onSnapshot(booksRef, (snapshot) => {
+                    allCloudBooks = [];
+                    snapshot.forEach(doc => {
+                        allCloudBooks.push({ ...doc.data(), docId: doc.id });
+                    });
+                    
+                    // Whenever data changes, refresh the current active UI
+                    if (currentUser) {
+                        if (currentUser.role === 'teacher') {
+                            renderTeacherDashboard();
+                        } else {
+                            updateStudentUI();
+                        }
+                    }
+                }, (error) => {
+                    console.error("Firestore sync error:", error);
+                    showToast("Sync error. Please refresh.", "error");
+                });
+            }
+
+            function updateStudentUI() {
+                // Filter cloud books for current student
+                studentLibrary = allCloudBooks.filter(b => 
+                    b.studentClass === currentUser.studentClass && 
+                    b.classNo === currentUser.classNo
+                );
+                
+                // Sort by date finished (newest first)
+                studentLibrary.sort((a, b) => new Date(b.dateFinished) - new Date(a.dateFinished));
+                
+                calculateStudentStats();
+                renderStudentLibrary();
+            }
+
+            function calculateStudentStats() {
+                const totalBooks = studentLibrary.length;
+                const totalPages = studentLibrary.reduce((sum, book) => sum + parseInt(book.pages || 0), 0);
+                const totalReviews = studentLibrary.filter(book => book.review && book.review.trim() !== '').length;
+
+                document.getElementById('totalBooksDisplay').textContent = totalBooks;
+                document.getElementById('totalReviewsDisplay').textContent = totalReviews;
+                document.getElementById('pagesReadDisplay').textContent = totalPages;
+
+                // Rank calculation
+                let currentRankIndex = 0;
+                for (let i = ranks.length - 1; i >= 0; i--) {
+                    if (totalPages >= ranks[i].threshold) {
+                        currentRankIndex = i;
+                        break;
+                    }
+                }
+
+                const currentRank = ranks[currentRankIndex];
+                document.getElementById('rankTitleDisplay').textContent = currentRank.name;
+                document.getElementById('levelNumberDisplay').textContent = `Lv ${currentRankIndex + 1}`;
+
+                let progressPercent = 100;
+                if (currentRankIndex < ranks.length - 1) {
+                    const nextRank = ranks[currentRankIndex + 1];
+                    const pagesInLevel = nextRank.threshold - currentRank.threshold;
+                    const pagesReadInLevel = totalPages - currentRank.threshold;
+                    progressPercent = (pagesReadInLevel / pagesInLevel) * 100;
+                    
+                    const pagesLeft = nextRank.threshold - totalPages;
+                    document.getElementById('pagesToNextLevel').textContent = `Read ${pagesLeft} more pages to level up!`;
+                } else {
+                    document.getElementById('pagesToNextLevel').textContent = `Maximum rank achieved! Awesome!`;
+                }
+
+                // Update UI bars
+                setTimeout(() => {
+                    document.getElementById('levelProgressBar').style.width = `${progressPercent}%`;
+                    const circleCircumference = 2 * Math.PI * 40;
+                    const offset = circleCircumference - (progressPercent / 100) * circleCircumference;
+                    document.getElementById('levelProgressCircle').style.strokeDashoffset = offset;
+                }, 100);
+            }
+
+            function getBookColor(title) {
+                let hash = 0;
+                for (let i = 0; i < title.length; i++) {
+                    hash = title.charCodeAt(i) + ((hash << 5) - hash);
+                }
+                const index = Math.abs(hash) % bookColors.length;
+                return bookColors[index];
+            }
+
+            function renderStudentLibrary() {
+                if (studentLibrary.length === 0) {
+                    els.emptyState.classList.remove('hidden');
+                    els.shelfView.classList.add('hidden');
+                    els.listView.classList.add('hidden');
+                    return;
+                }
+
+                els.emptyState.classList.add('hidden');
+                
+                if (currentViewMode === 'shelf') {
+                    els.shelfView.classList.remove('hidden');
+                    els.listView.classList.add('hidden');
+                    els.viewShelfBtn.classList.replace('text-gray-500', 'text-primary');
+                    els.viewShelfBtn.classList.add('bg-white', 'shadow-sm');
+                    els.viewListBtn.classList.replace('text-primary', 'text-gray-500');
+                    els.viewListBtn.classList.remove('bg-white', 'shadow-sm');
+                    renderShelfView();
+                } else {
+                    els.shelfView.classList.add('hidden');
+                    els.listView.classList.remove('hidden');
+                    els.viewListBtn.classList.replace('text-gray-500', 'text-primary');
+                    els.viewListBtn.classList.add('bg-white', 'shadow-sm');
+                    els.viewShelfBtn.classList.replace('text-primary', 'text-gray-500');
+                    els.viewShelfBtn.classList.remove('bg-white', 'shadow-sm');
+                    renderListView();
+                }
+            }
+
+            function renderShelfView() {
+                els.shelfView.innerHTML = '';
+                const booksPerShelf = window.innerWidth < 768 ? Math.floor(window.innerWidth / 45) : 14;
+                let currentShelfDiv = null;
+
+                studentLibrary.forEach((book, index) => {
+                    if (index % booksPerShelf === 0) {
+                        const shelfContainer = document.createElement('div');
+                        shelfContainer.className = 'w-full flex flex-col mt-4';
+                        currentShelfDiv = document.createElement('div');
+                        currentShelfDiv.className = 'flex items-end gap-[2px] md:gap-1 px-4 md:px-8 min-h-[140px]';
+                        shelfContainer.appendChild(currentShelfDiv);
+                        
+                        const woodDiv = document.createElement('div');
+                        woodDiv.className = 'h-5 w-full bg-[#8B5A2B] rounded shadow-md relative z-10 border-t border-[#A0522D]';
+                        woodDiv.innerHTML = '<div class="absolute top-0 left-0 right-0 h-1 bg-white/20"></div>';
+                        shelfContainer.appendChild(woodDiv);
+                        els.shelfView.appendChild(shelfContainer);
+                    }
+
+                    const thickness = Math.max(25, Math.min(55, 20 + (book.pages / 12)));
+                    const height = Math.max(105, Math.min(140, 100 + (book.title.length % 40)));
+                    const colors = getBookColor(book.title);
+                    const lean = (index % 4 === 0) ? (index % 2 === 0 ? '-rotate-2' : 'rotate-2') : '';
+
+                    const bookEl = document.createElement('div');
+                    bookEl.className = `book-spine cursor-pointer transition-transform hover:-translate-y-4 hover:scale-105 rounded-sm relative overflow-hidden flex items-center justify-center ${colors[0]} ${lean} border-l border-r border-white/20`;
+                    bookEl.style.width = `${thickness}px`;
+                    bookEl.style.height = `${height}px`;
+                    bookEl.title = `${book.title} by ${book.author}`;
+                    
+                    bookEl.innerHTML = `
+                        <div class="absolute left-0 top-0 bottom-0 w-1 ${colors[1]}"></div>
+                        <div class="absolute right-0 top-0 bottom-0 w-1 ${colors[2]}"></div>
+                        <div class="absolute top-2 w-full h-[2px] bg-white/30"></div>
+                        <div class="absolute bottom-2 w-full h-[2px] bg-white/30"></div>
+                        <span class="text-white text-xs font-bold truncate px-2 whitespace-nowrap overflow-hidden max-h-[80%] drop-shadow-md">${book.title}</span>
+                    `;
+
+                    bookEl.addEventListener('click', () => openModal(book));
+                    currentShelfDiv.appendChild(bookEl);
+                });
+            }
+
+            function renderListView() {
+                els.listView.innerHTML = '';
+                studentLibrary.forEach(book => {
+                    const colors = getBookColor(book.title);
+                    let starsHtml = '';
+                    for(let i=1; i<=5; i++) starsHtml += `<i class="fa-solid fa-star ${i <= book.rating ? 'text-yellow-400' : 'text-gray-200'}"></i>`;
+
+                    const card = document.createElement('div');
+                    card.className = 'bg-white rounded-2xl shadow-sm border border-gray-100 p-5 flex gap-4 hover:shadow-md transition-shadow cursor-pointer group';
+                    card.innerHTML = `
+                        <div class="w-16 h-24 rounded-lg shadow-inner flex items-center justify-center text-center p-2 flex-shrink-0 ${colors[0]} relative overflow-hidden group-hover:scale-105 transition-transform">
+                            <div class="absolute inset-0 bg-gradient-to-r from-black/20 to-transparent w-2"></div>
+                            <span class="text-white text-[10px] font-bold leading-tight line-clamp-4">${book.title}</span>
+                        </div>
+                        <div class="flex-grow min-w-0">
+                            <h4 class="font-bold text-gray-800 text-lg truncate">${book.title}</h4>
+                            <p class="text-sm text-gray-500 truncate mb-2">by ${book.author}</p>
+                            <div class="flex flex-wrap gap-2 mb-2">
+                                <span class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-md font-medium">${book.genre}</span>
+                                <span class="text-xs bg-indigo-50 text-indigo-600 px-2 py-1 rounded-md font-medium">${book.pages} pages</span>
+                            </div>
+                            <div class="text-xs text-gray-400 mt-2">${new Date(book.dateFinished).toLocaleDateString()}</div>
+                        </div>
+                        <div class="flex flex-col items-end justify-between flex-shrink-0">
+                            <div class="flex gap-0.5 text-xs">${starsHtml}</div>
+                            <button class="text-gray-400 hover:text-primary transition-colors p-2"><i class="fa-solid fa-pen-to-square"></i></button>
+                        </div>
+                    `;
+                    card.addEventListener('click', () => openModal(book));
+                    els.listView.appendChild(card);
+                });
+            }
+
+            async function handleFormSubmit(e) {
+                e.preventDefault();
+                if (!authUser) return;
+                if (!currentRating) {
+                    showToast('Please provide a star rating.', 'error');
+                    return;
+                }
+
+                els.saveBookBtn.disabled = true;
+                els.saveBookBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
+
+                try {
+                    const bookData = {
+                        studentName: currentUser.name,
+                        studentClass: currentUser.studentClass,
+                        classNo: currentUser.classNo,
+                        title: document.getElementById('bookTitle').value.trim(),
+                        author: document.getElementById('bookAuthor').value.trim(),
+                        genre: document.getElementById('bookGenre').value,
+                        pages: parseInt(document.getElementById('bookPages').value),
+                        dateFinished: document.getElementById('bookDate').value,
+                        rating: currentRating,
+                        review: document.getElementById('bookReview').value.trim(),
+                        timestamp: Date.now() // For strict sorting fallback
+                    };
+
+                    const collectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'books');
+
+                    if (editingId) {
+                        const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'books', editingId);
+                        await updateDoc(docRef, bookData);
+                        showToast('Book updated in cloud!');
+                    } else {
+                        await addDoc(collectionRef, bookData);
+                        showToast('Book securely saved to cloud!');
+                    }
+                    closeModal();
+                } catch (error) {
+                    console.error("Save error:", error);
+                    showToast("Failed to save book.", "error");
+                } finally {
+                    els.saveBookBtn.disabled = false;
+                    els.saveBookBtn.innerHTML = 'Save Book';
+                }
+            }
+
+            async function handleDelete() {
+                showConfirm('Delete Book', `Are you sure you want to permanently delete this book from the cloud?`, async () => {
+                    if (!authUser || !editingId) return;
+                    try {
+                        const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'books', editingId);
+                        await deleteDoc(docRef);
+                        showToast('Book removed from library.');
+                        closeModal();
+                    } catch (error) {
+                        console.error("Delete error:", error);
+                        showToast("Failed to delete book.", "error");
+                    }
+                });
+            }
+
+            function openModal(book = null) {
+                els.bookForm.reset();
+                resetStars();
+                
+                if (book) {
+                    document.getElementById('modalTitle').innerHTML = '<i class="fa-solid fa-pen text-primary mr-2"></i> Edit Book';
+                    editingId = book.docId; // Store Firestore ID
+                    document.getElementById('bookTitle').value = book.title;
+                    document.getElementById('bookAuthor').value = book.author;
+                    document.getElementById('bookGenre').value = book.genre || 'Fiction';
+                    document.getElementById('bookPages').value = book.pages;
+                    document.getElementById('bookDate').value = book.dateFinished;
+                    document.getElementById('bookReview').value = book.review || '';
+                    setRating(book.rating);
+                    els.deleteBookBtn.classList.remove('hidden');
+                } else {
+                    document.getElementById('modalTitle').innerHTML = '<i class="fa-solid fa-book-medical text-primary mr-2"></i> Log a Book';
+                    editingId = null;
+                    document.getElementById('bookDate').valueAsDate = new Date();
+                    els.deleteBookBtn.classList.add('hidden');
+                }
+
+                els.bookModal.classList.remove('hidden');
+                els.bookModal.classList.add('flex');
+                setTimeout(() => {
+                    els.bookModal.classList.remove('opacity-0');
+                    els.bookModalContent.classList.remove('scale-95');
+                    els.bookModalContent.classList.add('scale-100');
+                }, 10);
+            }
+
+            function closeModal() {
+                els.bookModal.classList.add('opacity-0');
+                els.bookModalContent.classList.remove('scale-100');
+                els.bookModalContent.classList.add('scale-95');
+                setTimeout(() => {
+                    els.bookModal.classList.add('hidden');
+                    els.bookModal.classList.remove('flex');
+                }, 300);
+            }
+
+            function setRating(rating) {
+                currentRating = rating;
+                els.ratingInput.value = rating;
+                els.stars.forEach((star, index) => {
+                    if (index < rating) {
+                        star.classList.remove('text-gray-300');
+                        star.classList.add('text-yellow-400', 'scale-110');
+                    } else {
+                        star.classList.remove('text-yellow-400', 'scale-110');
+                        star.classList.add('text-gray-300');
+                    }
+                });
+            }
+
+            function resetStars() {
+                currentRating = 0;
+                els.ratingInput.value = '';
+                els.stars.forEach(star => {
+                    star.classList.remove('text-yellow-400', 'scale-110');
+                    star.classList.add('text-gray-300');
+                });
+            }
+
+            function renderTeacherDashboard() {
+                els.teacherTableBody.innerHTML = '';
+                let totalSchoolPages = 0;
+                
+                // Group all books by Student
+                const studentStats = {};
+                
+                allCloudBooks.forEach(book => {
+                    totalSchoolPages += (book.pages || 0);
+                    
+                    // Create a unique key for each student
+                    const key = `${book.studentClass}_${book.classNo}`;
+                    if (!studentStats[key]) {
+                        studentStats[key] = {
+                            name: book.studentName,
+                            class: book.studentClass,
+                            no: book.classNo,
+                            bookCount: 0,
+                            pageCount: 0,
+                            latestDate: new Date(0) // Start at epoch
+                        };
+                    }
+                    
+                    studentStats[key].bookCount++;
+                    studentStats[key].pageCount += (book.pages || 0);
+                    
+                    const bookDate = new Date(book.dateFinished);
+                    if (bookDate > studentStats[key].latestDate) {
+                        studentStats[key].latestDate = bookDate;
+                    }
+                });
+
+                els.teacherTotalPages.textContent = totalSchoolPages.toLocaleString();
+                
+                const studentArray = Object.values(studentStats);
+                els.activeStudentsCount.textContent = `${studentArray.length} Active Students`;
+                
+                // Sort array: Class -> Class No -> Name
+                studentArray.sort((a, b) => {
+                    if (a.class !== b.class) return a.class.localeCompare(b.class);
+                    if (a.no !== b.no) return parseInt(a.no) - parseInt(b.no);
+                    return a.name.localeCompare(b.name);
+                });
+
+                if (studentArray.length === 0) {
+                    els.teacherTableBody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-gray-500">No reading records found in the cloud yet.</td></tr>';
+                    return;
+                }
+
+                studentArray.forEach(student => {
+                    const row = document.createElement('tr');
+                    row.className = 'hover:bg-gray-50 transition-colors';
+                    row.innerHTML = `
+                        <td class="p-4 text-center font-bold text-gray-700">${student.class}</td>
+                        <td class="p-4 text-center text-gray-500">${student.no}</td>
+                        <td class="p-4 font-medium text-gray-800">${student.name}</td>
+                        <td class="p-4 text-center"><span class="bg-indigo-100 text-indigo-700 px-2 py-1 rounded font-bold">${student.bookCount}</span></td>
+                        <td class="p-4 text-center text-gray-600">${student.pageCount}</td>
+                        <td class="p-4 text-right text-sm text-gray-400">${student.latestDate.toLocaleDateString()}</td>
+                    `;
+                    els.teacherTableBody.appendChild(row);
+                });
+            }
+
+            function exportDataToExcel(dataset, filename) {
+                if (dataset.length === 0) {
+                    showToast('No records to export.', 'error');
+                    return;
+                }
+
+                const headers = ['Student Name', 'Class', 'Class No', 'Book Title', 'Author', 'Genre', 'Pages', 'Date Finished', 'Rating', 'Review'];
+                const csvRows = [headers.join(',')];
+                
+                dataset.forEach(book => {
+                    const escapeStr = (str) => `"${String(str || '').replace(/"/g, '""')}"`;
+                    const row = [
+                        escapeStr(book.studentName),
+                        escapeStr(book.studentClass),
+                        escapeStr(book.classNo),
+                        escapeStr(book.title),
+                        escapeStr(book.author),
+                        escapeStr(book.genre),
+                        escapeStr(book.pages),
+                        escapeStr(book.dateFinished),
+                        escapeStr(book.rating),
+                        escapeStr(book.review)
+                    ];
+                    csvRows.push(row.join(','));
+                });
+
+                const csvData = csvRows.join('\n');
+                const blob = new Blob(['\uFEFF' + csvData], { type: 'text/csv;charset=utf-8;' }); 
+                const url = URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                showToast('Exported to Excel successfully!');
+            }
+
+            function attachEventListeners() {
+                // Login Toggles
+                els.switchToTeacherBtn.addEventListener('click', () => {
+                    els.studentLoginForm.classList.add('hidden');
+                    els.teacherLoginForm.classList.remove('hidden');
+                    document.getElementById('loginSubtitle').textContent = "Teacher Portal Authentication";
+                });
+                els.switchToStudentBtn.addEventListener('click', () => {
+                    els.teacherLoginForm.classList.add('hidden');
+                    els.studentLoginForm.classList.remove('hidden');
+                    document.getElementById('loginSubtitle').textContent = "Please log in to your reading record.";
+                });
+
+                // Student Login
+                els.studentLoginForm.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    currentUser = {
+                        role: 'student',
+                        name: els.studentNameInput.value.trim(),
+                        studentClass: els.studentClassSelect.value,
+                        classNo: els.studentClassNoSelect.value
+                    };
+                    localStorage.setItem(USER_AUTH_KEY, JSON.stringify(currentUser));
+                    handleSuccessfulLogin();
+                    showToast(`Welcome, ${currentUser.name}!`);
+                });
+
+                // Teacher Login
+                els.teacherLoginForm.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    const pw = els.teacherPasswordInput.value;
+                    if (pw === 'admin') {
+                        currentUser = { role: 'teacher' };
+                        localStorage.setItem(USER_AUTH_KEY, JSON.stringify(currentUser));
+                        handleSuccessfulLogin();
+                        showToast(`Access Granted.`);
+                    } else {
+                        showToast(`Incorrect password`, 'error');
+                    }
+                });
+
+                // General Interactions
+                els.logoutBtn.addEventListener('click', () => showConfirm('Log Out', 'Are you sure you want to log out?', performLogout));
+                
+                // Student Library Buttons
+                els.viewShelfBtn.addEventListener('click', () => { currentViewMode = 'shelf'; renderStudentLibrary(); });
+                els.viewListBtn.addEventListener('click', () => { currentViewMode = 'list'; renderStudentLibrary(); });
+                els.navAddBtn.addEventListener('click', () => openModal());
+                els.emptyAddBtn.addEventListener('click', () => openModal());
+                els.closeModalBtn.addEventListener('click', closeModal);
+                els.cancelBtn.addEventListener('click', closeModal);
+                els.bookModal.addEventListener('click', (e) => { if(e.target === els.bookModal) closeModal(); });
+
+                // Form actions
+                els.bookForm.addEventListener('submit', handleFormSubmit);
+                els.deleteBookBtn.addEventListener('click', handleDelete);
+
+                // Export buttons
+                els.exportExcelBtn.addEventListener('click', () => {
+                    const filename = `${currentUser.studentClass}_${currentUser.classNo}_${currentUser.name.replace(/\s+/g, '_')}_Records.csv`;
+                    exportDataToExcel(studentLibrary, filename);
+                });
+                els.teacherExportAllBtn.addEventListener('click', () => {
+                    // Sort entire school collection before export
+                    const sortedSchoolData = [...allCloudBooks].sort((a, b) => {
+                        if (a.studentClass !== b.studentClass) return (a.studentClass || '').localeCompare(b.studentClass || '');
+                        if (a.classNo !== b.classNo) return parseInt(a.classNo || 0) - parseInt(b.classNo || 0);
+                        return (a.studentName || '').localeCompare(b.studentName || '');
+                    });
+                    exportDataToExcel(sortedSchoolData, `School_Master_Reading_Records.csv`);
+                });
+
+                // Rating Stars
+                els.stars.forEach(star => {
+                    star.addEventListener('click', (e) => setRating(parseInt(e.target.dataset.rating)));
+                    star.addEventListener('mouseenter', (e) => {
+                        const hoverRating = parseInt(e.target.dataset.rating);
+                        els.stars.forEach((s, index) => {
+                            if (index < hoverRating) s.classList.add('text-yellow-200');
+                            else s.classList.remove('text-yellow-200');
+                        });
+                    });
+                    star.addEventListener('mouseleave', () => {
+                        els.stars.forEach(s => s.classList.remove('text-yellow-200'));
+                        setRating(currentRating);
+                    });
+                });
+                
+                // Confirm Modal
+                els.confirmCancelBtn.addEventListener('click', hideConfirm);
+                els.confirmActionBtn.addEventListener('click', () => {
+                    if (confirmActionCallback) confirmActionCallback();
+                    hideConfirm();
+                });
+
+                window.addEventListener('resize', () => {
+                    if(currentUser && currentUser.role === 'student' && currentViewMode === 'shelf' && studentLibrary.length > 0) {
+                        clearTimeout(window.resizeTimer);
+                        window.resizeTimer = setTimeout(renderShelfView, 150);
+                    }
+                });
+            }
+
+            // Utility functions for Modals
+            let confirmActionCallback = null;
+            function showConfirm(title, message, callback) {
+                els.confirmTitle.textContent = title;
+                els.confirmMessage.textContent = message;
+                confirmActionCallback = callback;
+                els.confirmModal.classList.remove('hidden');
+                els.confirmModal.classList.add('flex');
+                setTimeout(() => {
+                    els.confirmModal.classList.remove('opacity-0');
+                    els.confirmModalContent.classList.remove('scale-95');
+                    els.confirmModalContent.classList.add('scale-100');
+                }, 10);
+            }
+
+            function hideConfirm() {
+                els.confirmModal.classList.add('opacity-0');
+                els.confirmModalContent.classList.remove('scale-100');
+                els.confirmModalContent.classList.add('scale-95');
+                setTimeout(() => {
+                    els.confirmModal.classList.add('hidden');
+                    els.confirmModal.classList.remove('flex');
+                    confirmActionCallback = null;
+                }, 300);
+            }
+
+            let toastTimeout;
+            function showToast(message, type = 'success') {
+                clearTimeout(toastTimeout);
+                els.toastMsg.textContent = message;
+                const icon = els.toast.querySelector('i');
+                icon.className = type === 'error' ? 'fa-solid fa-circle-exclamation text-red-400' : 'fa-solid fa-circle-check text-green-400';
+                els.toast.classList.remove('translate-y-20', 'opacity-0');
+                toastTimeout = setTimeout(() => els.toast.classList.add('translate-y-20', 'opacity-0'), 3000);
+            }
+
+            // Start up
+            init();
+        });
+    </script>
+</body>
+</html>
