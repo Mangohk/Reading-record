@@ -61,7 +61,7 @@ The script must be owned by (or shared with) an account that can edit the target
 |-------------------------------|-----------------------------------|
 | `GET …/exec?action=submit&game_id=…&player=…&score=…` | `GET …/exec?action=submit&student_name=…&book_title=…&…` |
 | Response `{ ok: true, … }` | Same |
-| Optional `action=list` | Optional `action=list` |
+| Optional `action=list` | Optional `action=list` (+ `action=soft_delete`) |
 | Apps Script appends a sheet row | Same |
 | No secrets in the client URL beyond the public Web App endpoint | Same |
 
@@ -70,6 +70,7 @@ The script must be owned by (or shared with) an account that can edit the target
 - **Save:** `handleFormSubmit` → `ReadingRecordAPI.saveRecord({ student_name, class_name, class_no, book_title, author, genre, pages, date_finished, rating, review })`.
 - **Student bookshelf UI:** `localStorage` keyed by class + class no (`readingRecord_library_{class}_{no}`).
 - **Teacher dashboard / student refresh:** optional `ReadingRecordAPI.listRecords`; if list fails, local data still shows.
-- **Delete:** local-only. Google Sheets is **append-only** (like high scores); sheet rows are not deleted.
+- **Teacher soft-delete:** `ReadingRecordAPI.softDeleteRecord({ row, book_title, student_name })` sets the sheet **Timestamp** ~20 years back. Listings (server + client) skip rows older than **10 years**, so soft-deleted rows stay in the sheet for recovery but disappear from the UI.
+- Student modal “delete” remains local-only for the bookshelf cache.
 - Re-saving / editing appends another Sheet row.
 - There are **no API keys or secrets** in these files — only the public Web App `/exec` URL (same pattern as teaching-games high scores).

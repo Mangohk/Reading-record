@@ -455,6 +455,8 @@
 
             const USER_AUTH_KEY = 'studentReadingLog_SheetsUser';
             const STUDENT_LOGIN_SUBTITLE = 'Log books to the class Google Sheet.';
+            // Soft-deleted rows use Timestamp −20y; listings hide anything older than 10y.
+            const ACTIVE_RECORD_YEARS = 10;
 
             let currentUser = null;
             let studentLibrary = [];
@@ -590,9 +592,25 @@
                 return dt.toISOString().slice(0, 10);
             }
 
+            function activeRecordCutoffMs() {
+                const cutoff = new Date();
+                cutoff.setFullYear(cutoff.getFullYear() - ACTIVE_RECORD_YEARS);
+                return cutoff.getTime();
+            }
+
+            function isActiveSheetRecord(recOrBook) {
+                const raw = recOrBook && (recOrBook.timestamp != null ? recOrBook.timestamp : recOrBook);
+                const ts = raw instanceof Date ? raw.getTime() : Number(raw);
+                if (!ts || isNaN(ts)) return false;
+                return ts >= activeRecordCutoffMs();
+            }
+
             function mapSheetRecord(rec) {
+                const tsDate = rec.timestamp ? new Date(rec.timestamp) : null;
+                const tsMs = tsDate && !isNaN(tsDate.getTime()) ? tsDate.getTime() : Date.now();
                 return {
-                    docId: 'sheet_' + String(rec.timestamp) + '_' + String(rec.book_title || ''),
+                    docId: 'sheet_' + String(rec.row || tsMs) + '_' + String(rec.book_title || ''),
+                    sheetRow: rec.row != null ? Number(rec.row) : null,
                     studentName: rec.student_name,
                     studentClass: rec.class_name,
                     classNo: String(rec.class_no == null ? '' : rec.class_no),
@@ -603,8 +621,15 @@
                     dateFinished: formatDateValue(rec.date_finished),
                     rating: Number(rec.rating) || 0,
                     review: rec.review || '',
-                    timestamp: rec.timestamp ? new Date(rec.timestamp).getTime() : Date.now()
+                    timestamp: tsMs
                 };
+            }
+
+            function mapActiveSheetRecords(records) {
+                return (records || [])
+                    .filter(isActiveSheetRecord)
+                    .map(mapSheetRecord)
+                    .filter(book => isActiveSheetRecord(book));
             }
 
             function init() {
@@ -702,7 +727,7 @@
                         limit: 100
                     });
                     if (records && records.length && studentLibrary.length === 0) {
-                        studentLibrary = records.map(mapSheetRecord);
+                        studentLibrary = mapActiveSheetRecords(records);
                         saveLocalLibrary(studentLibrary);
                         updateStudentUI();
                     }
@@ -716,7 +741,7 @@
                 els.teacherTableBody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-gray-400">Loading student records...</td></tr>';
                 try {
                     const records = await ReadingRecordAPI.listRecords({ limit: 200 });
-                    allSheetBooks = (records || []).map(mapSheetRecord);
+                    allSheetBooks = mapActiveSheetRecords(records);
                     renderTeacherDashboard();
                 } catch (err) {
                     console.error('Teacher sheet load failed:', err);
@@ -1086,7 +1111,7 @@
 
             function defaultSortForView(mode) {
                 return mode === 'books'
-                    ? { key: 'title', dir: 'asc' }
+                    ? { key: 'latest', dir: 'desc' }
                     : { key: 'class', dir: 'asc' };
             }
 
@@ -1310,32 +1335,65 @@
                 const latestFromRaw = els.teacherFilterLatestFrom.value;
                 const latestFrom = latestFromRaw ? new Date(latestFromRaw + 'T00:00:00') : null;
 
-                let sourceBooks = allSheetBooks;
-                if (studentQ || classQ || noQ) {
-                    sourceBooks = sourceBooks.filter(b => {
-                        const studentOk = !studentQ || String(b.studentName || '').toLowerCase().includes(studentQ);
-                        const classOk = !classQ || String(b.studentClass || '').toLowerCase().includes(classQ);
-                        const noOk = !noQ || String(b.classNo || '').toLowerCase() === noQ;
-                        return studentOk && classOk && noOk;
-                    });
-                }
+                // Individual sheet records (not title aggregates) so teachers can soft-delete one row.
+                let rows = allSheetBooks
+                    .filter(isActiveSheetRecord)
+                    .map(book => ({
+                        docId: book.docId,
+                        sheetRow: book.sheetRow,
+                        title: book.title,
+                        author: book.author,
+                        studentName: book.studentName,
+                        studentClass: book.studentClass,
+                        classNo: book.classNo,
+                        pages: book.pages,
+                        rating: book.rating,
+                        dateFinished: book.dateFinished,
+                        latestDate: parseLooseDate(book.dateFinished),
+                        timestamp: book.timestamp
+                    }));
 
-                let rows = buildBookAggregates(sourceBooks);
-                if (!isNaN(minReaders) && minReaders > 0) {
-                    rows = rows.filter(b => b.readerCount >= minReaders);
+                if (studentQ) {
+                    rows = rows.filter(b => String(b.studentName || '').toLowerCase().includes(studentQ));
+                }
+                if (classQ) {
+                    rows = rows.filter(b => String(b.studentClass || '').toLowerCase().includes(classQ));
+                }
+                if (noQ) {
+                    rows = rows.filter(b => String(b.classNo || '').toLowerCase() === noQ);
                 }
                 if (latestFrom && !isNaN(latestFrom.getTime())) {
                     rows = rows.filter(b => b.latestDate >= latestFrom);
                 }
 
+                if (!isNaN(minReaders) && minReaders > 0) {
+                    const readersByTitle = {};
+                    allSheetBooks.filter(isActiveSheetRecord).forEach(book => {
+                        const key = normalizeTitleKey(book.title);
+                        if (!key) return;
+                        if (!readersByTitle[key]) readersByTitle[key] = {};
+                        const sk = String(book.studentClass || '') + '_' + String(book.classNo || '') + '_' + String(book.studentName || '');
+                        readersByTitle[key][sk] = true;
+                    });
+                    rows = rows.filter(b => {
+                        const key = normalizeTitleKey(b.title);
+                        const count = readersByTitle[key] ? Object.keys(readersByTitle[key]).length : 0;
+                        return count >= minReaders;
+                    });
+                }
+
                 return applyTeacherSort(rows, {
                     title: (a, b) => compareNullableStrings(a.title, b.title),
                     author: (a, b) => compareNullableStrings(a.author, b.author),
-                    readers: (a, b) => compareNumbers(a.readerCount, b.readerCount),
-                    classes: (a, b) => compareNullableStrings(a.classes, b.classes),
-                    students: (a, b) => compareNullableStrings(a.studentsLabel, b.studentsLabel),
+                    student: (a, b) => compareNullableStrings(a.studentName, b.studentName),
+                    class: (a, b) => {
+                        const byClass = compareNullableStrings(a.studentClass, b.studentClass);
+                        if (byClass !== 0) return byClass;
+                        return compareNumbers(a.classNo, b.classNo);
+                    },
+                    no: (a, b) => compareNumbers(a.classNo, b.classNo),
                     latest: (a, b) => a.latestDate - b.latestDate,
-                    _default: (a, b) => compareNullableStrings(a.title, b.title)
+                    _default: (a, b) => a.latestDate - b.latestDate
                 });
             }
 
@@ -1399,43 +1457,88 @@
             }
 
             function renderTeacherBooksView() {
-                els.teacherTableTitle.textContent = 'Books Overview';
+                els.teacherTableTitle.textContent = 'Book Records';
                 els.teacherTableHeadRow.innerHTML =
                     sortHeaderHtml('Book Title', 'title', '') +
                     sortHeaderHtml('Author', 'author', '') +
-                    sortHeaderHtml('Readers', 'readers', 'text-center') +
-                    sortHeaderHtml('Classes', 'classes', '') +
-                    sortHeaderHtml('Students', 'students', '') +
-                    sortHeaderHtml('Latest Entry', 'latest', 'text-right');
+                    sortHeaderHtml('Student', 'student', '') +
+                    sortHeaderHtml('Class', 'class', 'text-center') +
+                    sortHeaderHtml('No.', 'no', 'text-center') +
+                    sortHeaderHtml('Date Finished', 'latest', 'text-right') +
+                    '<th class="p-4 font-bold text-center w-14" scope="col" title="Remove record"></th>';
 
                 const bookArray = getFilteredBookRows();
                 teacherVisibleRows = bookArray;
-                els.activeStudentsCount.textContent = bookArray.length + ' book' + (bookArray.length === 1 ? '' : 's') + ' shown';
+                els.activeStudentsCount.textContent = bookArray.length + ' record' + (bookArray.length === 1 ? '' : 's') + ' shown';
 
                 if (bookArray.length === 0) {
                     const emptyMsg = allSheetBooks.length === 0
                         ? 'No reading records found on the Google Sheet yet.'
-                        : 'No matching books.';
-                    els.teacherTableBody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-gray-500">' + emptyMsg + '</td></tr>';
+                        : 'No matching book records.';
+                    els.teacherTableBody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-gray-500">' + emptyMsg + '</td></tr>';
                     return;
                 }
 
                 bookArray.forEach(book => {
                     const row = document.createElement('tr');
                     row.className = 'hover:bg-gray-50 transition-colors';
-                    const latestLabel = book.latestDate.getTime() === 0 ? '—' : book.latestDate.toLocaleDateString();
-                    const studentsShort = book.studentsLabel.length > 80
-                        ? book.studentsLabel.slice(0, 77) + '…'
-                        : book.studentsLabel;
+                    const dateLabel = book.latestDate.getTime() === 0 ? '—' : book.latestDate.toLocaleDateString();
+                    const canDelete = book.sheetRow != null && !isNaN(book.sheetRow);
                     row.innerHTML =
                         '<td class="p-4 font-medium text-gray-800">' + escapeHtml(book.title) + '</td>' +
                         '<td class="p-4 text-gray-600">' + escapeHtml(book.author || '—') + '</td>' +
-                        '<td class="p-4 text-center"><span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded font-bold">' + book.readerCount + '</span></td>' +
-                        '<td class="p-4 text-gray-600">' + escapeHtml(book.classes || '—') + '</td>' +
-                        '<td class="p-4 text-sm text-gray-500 max-w-xs" title="' + escapeHtml(book.studentsLabel) + '">' + escapeHtml(studentsShort || '—') + '</td>' +
-                        '<td class="p-4 text-right text-sm text-gray-400">' + latestLabel + '</td>';
+                        '<td class="p-4 text-gray-700">' + escapeHtml(book.studentName || '—') + '</td>' +
+                        '<td class="p-4 text-center text-gray-600">' + escapeHtml(book.studentClass || '—') + '</td>' +
+                        '<td class="p-4 text-center text-gray-500">' + escapeHtml(book.classNo || '—') + '</td>' +
+                        '<td class="p-4 text-right text-sm text-gray-400">' + dateLabel + '</td>' +
+                        '<td class="p-4 text-center">' +
+                            (canDelete
+                                ? '<button type="button" class="teacher-soft-delete-btn text-gray-300 hover:text-red-500 transition-colors p-1.5 rounded-lg hover:bg-red-50"'
+                                    + ' data-row="' + escapeHtml(String(book.sheetRow)) + '"'
+                                    + ' data-title="' + escapeHtml(book.title || '') + '"'
+                                    + ' data-student="' + escapeHtml(book.studentName || '') + '"'
+                                    + ' data-doc-id="' + escapeHtml(book.docId || '') + '"'
+                                    + ' title="Remove this record">'
+                                    + '<i class="fa-solid fa-trash-can"></i>'
+                                    + '</button>'
+                                : '<span class="text-gray-200" title="Cannot remove (missing sheet row)">—</span>') +
+                        '</td>';
                     els.teacherTableBody.appendChild(row);
                 });
+            }
+
+            function confirmSoftDeleteBookRecord(meta) {
+                const label = (meta.title || 'this book') +
+                    (meta.studentName ? ' (' + meta.studentName + ')' : '');
+                showConfirm(
+                    'Remove book record?',
+                    'Hide "' + label + '" from all listings? The sheet row is kept (timestamp moved back 20 years) so it can be recovered later.',
+                    () => softDeleteBookRecord(meta)
+                );
+            }
+
+            async function softDeleteBookRecord(meta) {
+                if (!meta || meta.sheetRow == null) {
+                    showToast('Missing sheet row for this record.', 'error');
+                    return;
+                }
+                try {
+                    await ReadingRecordAPI.softDeleteRecord({
+                        row: meta.sheetRow,
+                        book_title: meta.title,
+                        student_name: meta.studentName
+                    });
+                    allSheetBooks = allSheetBooks.filter(book => {
+                        if (meta.docId && book.docId === meta.docId) return false;
+                        if (book.sheetRow != null && Number(book.sheetRow) === Number(meta.sheetRow)) return false;
+                        return true;
+                    });
+                    renderTeacherDashboard();
+                    showToast('Record removed from listings (kept in sheet for recovery).');
+                } catch (err) {
+                    console.error('Soft delete failed:', err);
+                    showToast((err && err.message) || 'Could not remove record. Redeploy Apps Script if soft_delete is missing.', 'error');
+                }
             }
 
             function exportDataToExcel(dataset, filename, columns) {
@@ -1488,11 +1591,11 @@
                     exportDataToExcel(teacherVisibleRows, 'Teacher_Books_Visible.csv', [
                         { key: 'title', header: 'Book Title' },
                         { key: 'author', header: 'Author' },
-                        { key: 'readerCount', header: 'Readers' },
-                        { key: 'classes', header: 'Classes' },
-                        { key: 'studentsLabel', header: 'Students' },
-                        { key: 'pageCount', header: 'Total Pages' },
-                        { value: (r) => r.latestDate.getTime() === 0 ? '' : r.latestDate.toISOString().slice(0, 10), header: 'Latest Entry' }
+                        { key: 'studentName', header: 'Student Name' },
+                        { key: 'studentClass', header: 'Class' },
+                        { key: 'classNo', header: 'Class No' },
+                        { key: 'pages', header: 'Pages' },
+                        { value: (r) => r.latestDate.getTime() === 0 ? '' : r.latestDate.toISOString().slice(0, 10), header: 'Date Finished' }
                     ]);
                 } else {
                     exportDataToExcel(teacherVisibleRows, 'Teacher_Students_Visible.csv', [
@@ -1571,6 +1674,18 @@
                 });
 
                 els.teacherTableBody.addEventListener('click', (e) => {
+                    const deleteBtn = e.target.closest('.teacher-soft-delete-btn');
+                    if (deleteBtn && els.teacherTableBody.contains(deleteBtn)) {
+                        e.preventDefault();
+                        confirmSoftDeleteBookRecord({
+                            sheetRow: parseInt(deleteBtn.getAttribute('data-row'), 10),
+                            title: deleteBtn.getAttribute('data-title') || '',
+                            studentName: deleteBtn.getAttribute('data-student') || '',
+                            docId: deleteBtn.getAttribute('data-doc-id') || ''
+                        });
+                        return;
+                    }
+
                     const link = e.target.closest('.teacher-student-link');
                     if (!link || !els.teacherTableBody.contains(link)) return;
                     openStudentBooksView({

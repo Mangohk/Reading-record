@@ -8,10 +8,15 @@
  *
  * Spreadsheet: 1uRgIHMA8KIjRad6LkJbghXHXKMTcsdbkHdUQdDIvJHs
  * Target sheet gid: 2141496446 (tab name often book_records)
+ *
+ * Soft-delete: action=soft_delete sets Timestamp to 20 years ago.
+ * Listings skip rows whose Timestamp is older than 10 years (recovery backup).
  */
 
 var SPREADSHEET_ID = '1uRgIHMA8KIjRad6LkJbghXHXKMTcsdbkHdUQdDIvJHs';
 var SHEET_GID = 2141496446;
+var ACTIVE_YEARS = 10;
+var SOFT_DELETE_YEARS = 20;
 
 var HEADERS = [
   'Timestamp',
@@ -38,7 +43,10 @@ function doGet(e) {
     if (action === 'list') {
       return json_(listRecords_(params));
     }
-    return json_({ ok: true, message: 'Reading Record API. Use action=submit or action=list.' });
+    if (action === 'soft_delete') {
+      return json_(softDeleteRecord_(params));
+    }
+    return json_({ ok: true, message: 'Reading Record API. Use action=submit, action=list, or action=soft_delete.' });
   } catch (err) {
     return json_({ ok: false, error: String(err && err.message ? err.message : err) });
   }
@@ -66,6 +74,27 @@ function ensureHeaders_(sheet) {
   if (empty || sheet.getLastRow() === 0) {
     sheet.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]);
   }
+}
+
+function activeCutoffDate_() {
+  var cutoff = new Date();
+  cutoff.setFullYear(cutoff.getFullYear() - ACTIVE_YEARS);
+  return cutoff;
+}
+
+function softDeleteTimestamp_() {
+  var soft = new Date();
+  soft.setFullYear(soft.getFullYear() - SOFT_DELETE_YEARS);
+  return soft;
+}
+
+function parseSheetDate_(value) {
+  if (value instanceof Date) {
+    return isNaN(value.getTime()) ? null : value;
+  }
+  if (value == null || value === '') return null;
+  var d = new Date(value);
+  return isNaN(d.getTime()) ? null : d;
 }
 
 function submitRecord_(params) {
@@ -124,12 +153,18 @@ function listRecords_(params) {
   var filterClass = String(params.class_name || '').trim().toLowerCase();
   var filterNo = String(params.class_no || '').trim().toLowerCase();
   var limit = Math.min(Math.max(parseInt(params.limit, 10) || 50, 1), 200);
+  var cutoff = activeCutoffDate_();
 
   var records = [];
   for (var i = values.length - 1; i >= 0; i--) {
     var r = values[i];
+    var ts = parseSheetDate_(r[0]);
+    // Soft-deleted / archived rows: Timestamp older than 10 years → hide from listings
+    if (!ts || ts < cutoff) continue;
+
     var rec = {
-      timestamp: r[0],
+      row: i + 2,
+      timestamp: ts,
       student_name: r[1],
       class_name: r[2],
       class_no: r[3],
@@ -151,6 +186,49 @@ function listRecords_(params) {
   }
 
   return { ok: true, records: records };
+}
+
+/**
+ * Soft-delete: move Timestamp 20 years back so list filters hide the row.
+ * Row stays in the sheet for manual recovery.
+ */
+function softDeleteRecord_(params) {
+  var row = parseInt(params.row, 10);
+  if (!row || row < 2 || isNaN(row)) {
+    throw new Error('row is required (sheet row number >= 2)');
+  }
+
+  var sheet = getTargetSheet_();
+  var lastRow = sheet.getLastRow();
+  if (row > lastRow) {
+    throw new Error('row out of range');
+  }
+
+  var expectedTitle = String(params.book_title || '').trim();
+  if (expectedTitle) {
+    var cellTitle = String(sheet.getRange(row, 5).getValue() || '').trim();
+    if (cellTitle.toLowerCase() !== expectedTitle.toLowerCase()) {
+      throw new Error('Row does not match book_title');
+    }
+  }
+
+  var expectedStudent = String(params.student_name || '').trim();
+  if (expectedStudent) {
+    var cellStudent = String(sheet.getRange(row, 2).getValue() || '').trim();
+    if (cellStudent.toLowerCase() !== expectedStudent.toLowerCase()) {
+      throw new Error('Row does not match student_name');
+    }
+  }
+
+  var softTs = softDeleteTimestamp_();
+  sheet.getRange(row, 1).setValue(softTs);
+
+  return {
+    ok: true,
+    soft_deleted: true,
+    row: row,
+    timestamp: softTs
+  };
 }
 
 function json_(obj) {

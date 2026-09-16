@@ -52,6 +52,7 @@
 
   /**
    * Optional: list recent records (action=list).
+   * Server skips rows with Timestamp older than 10 years (soft-deleted/archived).
    */
   async function listRecords(options) {
     if (!API_URL || API_URL === 'YOUR_APPS_SCRIPT_WEB_APP_URL') {
@@ -68,9 +69,27 @@
     return data.records || [];
   }
 
+  /**
+   * Soft-delete a sheet row (action=soft_delete): sets Timestamp ~20 years ago.
+   * Listings hide rows older than 10 years; row remains for recovery.
+   */
+  async function softDeleteRecord(payload) {
+    if (!API_URL || API_URL === 'YOUR_APPS_SCRIPT_WEB_APP_URL') {
+      throw new Error('Set API_URL in reading-api.js to your Apps Script Web App URL');
+    }
+    payload = payload || {};
+    return requestJson(API_URL + '?' + queryString({
+      action: 'soft_delete',
+      row: payload.row || payload.sheetRow,
+      book_title: trim(payload.book_title || payload.title),
+      student_name: trim(payload.student_name || payload.studentName)
+    }));
+  }
+
   global.ReadingRecordAPI = {
     API_URL: API_URL,
     saveRecord: saveRecord,
-    listRecords: listRecords
+    listRecords: listRecords,
+    softDeleteRecord: softDeleteRecord
   };
 })(window);
