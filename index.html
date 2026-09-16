@@ -38,6 +38,22 @@
         ::-webkit-scrollbar-thumb { background: #c7c7c7; border-radius: 5px; }
         ::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
         .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+
+        th.teacher-sort-th {
+            cursor: pointer;
+            user-select: none;
+            white-space: nowrap;
+        }
+        th.teacher-sort-th:hover { color: #4F46E5; }
+        th.teacher-sort-th.is-active { color: #4F46E5; }
+        th.teacher-sort-th .sort-indicator {
+            display: inline-block;
+            margin-left: 0.35rem;
+            font-size: 0.7em;
+            opacity: 0.35;
+            vertical-align: middle;
+        }
+        th.teacher-sort-th.is-active .sort-indicator { opacity: 1; }
     </style>
 </head>
 <body class="text-gray-800 antialiased min-h-screen flex flex-col bg-gray-50 selection:bg-indigo-200 selection:text-indigo-900">
@@ -250,12 +266,7 @@
                     </button>
                 </div>
                 <div class="flex items-end gap-3 flex-wrap">
-                    <div>
-                        <label for="teacherSortSelect" class="block text-xs font-bold text-gray-500 uppercase mb-1">Sort by</label>
-                        <select id="teacherSortSelect" class="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none min-w-[160px]">
-                            <!-- options filled by JS per view -->
-                        </select>
-                    </div>
+                    <p class="text-xs text-gray-400 self-center hidden sm:block">Click a column header to sort</p>
                     <button type="button" id="teacherClearFiltersBtn" class="text-sm font-medium text-gray-500 hover:text-primary px-2 py-2">Clear filters</button>
                 </div>
             </div>
@@ -263,34 +274,42 @@
             <div id="teacherFiltersStudents" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                 <div>
                     <label for="teacherFilterBook" class="block text-xs font-bold text-gray-500 uppercase mb-1">Book title</label>
-                    <input type="text" id="teacherFilterBook" placeholder="Match book title…" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none">
+                    <input type="text" id="teacherFilterBook" autocomplete="off" placeholder="Match book title…" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none">
                 </div>
                 <div>
                     <label for="teacherFilterClass" class="block text-xs font-bold text-gray-500 uppercase mb-1">Class</label>
-                    <input type="text" id="teacherFilterClass" placeholder="e.g. 4A" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none">
+                    <input type="text" id="teacherFilterClass" autocomplete="off" placeholder="e.g. 4A" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none">
                 </div>
                 <div>
                     <label for="teacherFilterClassNo" class="block text-xs font-bold text-gray-500 uppercase mb-1">Class No.</label>
-                    <input type="text" id="teacherFilterClassNo" placeholder="Optional" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none">
+                    <input type="text" id="teacherFilterClassNo" autocomplete="off" placeholder="Optional" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none">
+                </div>
+                <div>
+                    <label for="teacherFilterMinBooks" class="block text-xs font-bold text-gray-500 uppercase mb-1">Min books</label>
+                    <input type="number" id="teacherFilterMinBooks" autocomplete="off" min="1" placeholder="e.g. 3" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none">
                 </div>
             </div>
 
-            <div id="teacherFiltersBooks" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 hidden">
+            <div id="teacherFiltersBooks" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 hidden">
+                <div>
+                    <label for="teacherFilterBooksStudent" class="block text-xs font-bold text-gray-500 uppercase mb-1">Student name</label>
+                    <input type="text" id="teacherFilterBooksStudent" autocomplete="off" placeholder="Match student…" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none">
+                </div>
                 <div>
                     <label for="teacherFilterBooksClass" class="block text-xs font-bold text-gray-500 uppercase mb-1">Class</label>
-                    <input type="text" id="teacherFilterBooksClass" placeholder="e.g. 4A" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none">
+                    <input type="text" id="teacherFilterBooksClass" autocomplete="off" placeholder="e.g. 4A" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none">
                 </div>
                 <div>
                     <label for="teacherFilterBooksClassNo" class="block text-xs font-bold text-gray-500 uppercase mb-1">Class No.</label>
-                    <input type="text" id="teacherFilterBooksClassNo" placeholder="Optional" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none">
+                    <input type="text" id="teacherFilterBooksClassNo" autocomplete="off" placeholder="Optional" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none">
                 </div>
                 <div>
                     <label for="teacherFilterMinReaders" class="block text-xs font-bold text-gray-500 uppercase mb-1">Min. readers</label>
-                    <input type="number" id="teacherFilterMinReaders" min="1" placeholder="e.g. 2" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none">
+                    <input type="number" id="teacherFilterMinReaders" autocomplete="off" min="1" placeholder="e.g. 2" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none">
                 </div>
                 <div>
                     <label for="teacherFilterLatestFrom" class="block text-xs font-bold text-gray-500 uppercase mb-1">Latest entry from</label>
-                    <input type="date" id="teacherFilterLatestFrom" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none">
+                    <input type="date" id="teacherFilterLatestFrom" autocomplete="off" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none">
                 </div>
             </div>
         </div>
@@ -442,6 +461,9 @@
             let allSheetBooks = [];
             let teacherViewMode = 'students'; // 'students' | 'books'
             let teacherVisibleRows = []; // currently displayed aggregated rows (for export)
+            // In-memory only — never persisted to localStorage; reset on load/login
+            let teacherSortKey = 'class';
+            let teacherSortDir = 'asc'; // 'asc' | 'desc'
             let currentViewMode = 'shelf';
             let currentRating = 0;
             let editingId = null;
@@ -511,11 +533,12 @@
                 teacherViewBooksBtn: document.getElementById('teacherViewBooksBtn'),
                 teacherFiltersStudents: document.getElementById('teacherFiltersStudents'),
                 teacherFiltersBooks: document.getElementById('teacherFiltersBooks'),
-                teacherSortSelect: document.getElementById('teacherSortSelect'),
                 teacherClearFiltersBtn: document.getElementById('teacherClearFiltersBtn'),
                 teacherFilterBook: document.getElementById('teacherFilterBook'),
                 teacherFilterClass: document.getElementById('teacherFilterClass'),
                 teacherFilterClassNo: document.getElementById('teacherFilterClassNo'),
+                teacherFilterMinBooks: document.getElementById('teacherFilterMinBooks'),
+                teacherFilterBooksStudent: document.getElementById('teacherFilterBooksStudent'),
                 teacherFilterBooksClass: document.getElementById('teacherFilterBooksClass'),
                 teacherFilterBooksClassNo: document.getElementById('teacherFilterBooksClassNo'),
                 teacherFilterMinReaders: document.getElementById('teacherFilterMinReaders'),
@@ -643,6 +666,7 @@
                     els.teacherMain.classList.add('flex');
                     els.appMain.classList.add('hidden');
                     els.appMain.classList.remove('flex');
+                    resetTeacherDashboardState();
                     loadTeacherFromSheet();
                 } else {
                     els.headerTitle.textContent = 'My Reading Record';
@@ -1025,8 +1049,28 @@
                 return isNaN(d.getTime()) ? new Date(0) : d;
             }
 
-            function setTeacherViewMode(mode) {
-                teacherViewMode = mode === 'books' ? 'books' : 'students';
+            function resetTeacherDashboardState() {
+                teacherViewMode = 'students';
+                teacherSortKey = 'class';
+                teacherSortDir = 'asc';
+                teacherVisibleRows = [];
+                clearTeacherFilterInputs();
+                applyTeacherViewChrome();
+            }
+
+            function clearTeacherFilterInputs() {
+                els.teacherFilterBook.value = '';
+                els.teacherFilterClass.value = '';
+                els.teacherFilterClassNo.value = '';
+                els.teacherFilterMinBooks.value = '';
+                els.teacherFilterBooksStudent.value = '';
+                els.teacherFilterBooksClass.value = '';
+                els.teacherFilterBooksClassNo.value = '';
+                els.teacherFilterMinReaders.value = '';
+                els.teacherFilterLatestFrom.value = '';
+            }
+
+            function applyTeacherViewChrome() {
                 const isStudents = teacherViewMode === 'students';
                 els.teacherFiltersStudents.classList.toggle('hidden', !isStudents);
                 els.teacherFiltersBooks.classList.toggle('hidden', isStudents);
@@ -1038,39 +1082,93 @@
                 els.teacherViewBooksBtn.classList.toggle('text-primary', !isStudents);
                 els.teacherViewBooksBtn.classList.toggle('shadow-sm', !isStudents);
                 els.teacherViewBooksBtn.classList.toggle('text-gray-500', isStudents);
-                populateTeacherSortOptions();
+            }
+
+            function defaultSortForView(mode) {
+                return mode === 'books'
+                    ? { key: 'title', dir: 'asc' }
+                    : { key: 'class', dir: 'asc' };
+            }
+
+            function setTeacherViewMode(mode, options) {
+                options = options || {};
+                const nextMode = mode === 'books' ? 'books' : 'students';
+                const modeChanged = teacherViewMode !== nextMode;
+                teacherViewMode = nextMode;
+                if (modeChanged && !options.keepSort) {
+                    const defaults = defaultSortForView(teacherViewMode);
+                    teacherSortKey = defaults.key;
+                    teacherSortDir = defaults.dir;
+                }
+                applyTeacherViewChrome();
                 renderTeacherDashboard();
             }
 
-            function populateTeacherSortOptions() {
-                const select = els.teacherSortSelect;
-                const current = select.value;
-                const options = teacherViewMode === 'books'
-                    ? [
-                        { value: 'title', label: 'Book title' },
-                        { value: 'readers', label: 'Readers (count)' },
-                        { value: 'latest', label: 'Latest entry' }
-                    ]
-                    : [
-                        { value: 'class', label: 'Class' },
-                        { value: 'books', label: 'Books (count)' },
-                        { value: 'latest', label: 'Latest entry' }
-                    ];
-                select.innerHTML = options.map(o =>
-                    '<option value="' + o.value + '">' + o.label + '</option>'
-                ).join('');
-                const stillValid = options.some(o => o.value === current);
-                select.value = stillValid ? current : options[0].value;
+            function clearTeacherFilters() {
+                clearTeacherFilterInputs();
+                const defaults = defaultSortForView(teacherViewMode);
+                teacherSortKey = defaults.key;
+                teacherSortDir = defaults.dir;
+                renderTeacherDashboard();
             }
 
-            function clearTeacherFilters() {
-                els.teacherFilterBook.value = '';
-                els.teacherFilterClass.value = '';
-                els.teacherFilterClassNo.value = '';
-                els.teacherFilterBooksClass.value = '';
-                els.teacherFilterBooksClassNo.value = '';
-                els.teacherFilterMinReaders.value = '';
-                els.teacherFilterLatestFrom.value = '';
+            function openStudentBooksView(student) {
+                clearTeacherFilterInputs();
+                els.teacherFilterBooksStudent.value = student.name || '';
+                els.teacherFilterBooksClass.value = student.class || '';
+                els.teacherFilterBooksClassNo.value = student.no || '';
+                const defaults = defaultSortForView('books');
+                teacherSortKey = defaults.key;
+                teacherSortDir = defaults.dir;
+                setTeacherViewMode('books', { keepSort: true });
+            }
+
+            function sortHeaderHtml(label, key, extraClass) {
+                const active = teacherSortKey === key;
+                const indicator = active
+                    ? (teacherSortDir === 'asc' ? '▲' : '▼')
+                    : '▲';
+                const classes = 'p-4 font-bold teacher-sort-th'
+                    + (extraClass ? ' ' + extraClass : '')
+                    + (active ? ' is-active' : '');
+                return '<th class="' + classes + '" data-sort-key="' + key + '" title="Sort by ' + escapeHtml(label) + '" scope="col">'
+                    + escapeHtml(label)
+                    + '<span class="sort-indicator" aria-hidden="true">' + indicator + '</span>'
+                    + '</th>';
+            }
+
+            function compareNullableStrings(a, b) {
+                return String(a || '').localeCompare(String(b || ''), undefined, { sensitivity: 'base' });
+            }
+
+            function compareNumbers(a, b) {
+                return (Number(a) || 0) - (Number(b) || 0);
+            }
+
+            function applyTeacherSort(rows, comparators) {
+                const dir = teacherSortDir === 'desc' ? -1 : 1;
+                const primary = comparators[teacherSortKey] || comparators._default;
+                const fallback = comparators._default;
+                rows.sort((a, b) => {
+                    let result = primary(a, b);
+                    if (result === 0 && fallback && fallback !== primary) {
+                        result = fallback(a, b);
+                    }
+                    return result * dir;
+                });
+                return rows;
+            }
+
+            function handleTeacherSortClick(key) {
+                if (!key) return;
+                if (teacherSortKey === key) {
+                    teacherSortDir = teacherSortDir === 'asc' ? 'desc' : 'asc';
+                } else {
+                    teacherSortKey = key;
+                    // Counts / dates start descending; text starts ascending
+                    const descFirst = key === 'books' || key === 'pages' || key === 'readers' || key === 'latest' || key === 'no';
+                    teacherSortDir = descFirst ? 'desc' : 'asc';
+                }
                 renderTeacherDashboard();
             }
 
@@ -1159,6 +1257,7 @@
                 const bookQ = (els.teacherFilterBook.value || '').trim().toLowerCase();
                 const classQ = (els.teacherFilterClass.value || '').trim().toLowerCase();
                 const noQ = (els.teacherFilterClassNo.value || '').trim().toLowerCase();
+                const minBooks = parseInt(els.teacherFilterMinBooks.value, 10);
 
                 let sourceBooks = allSheetBooks;
                 if (bookQ) {
@@ -1172,22 +1271,39 @@
                 if (noQ) {
                     rows = rows.filter(s => String(s.no || '').toLowerCase() === noQ);
                 }
+                if (!isNaN(minBooks) && minBooks > 0) {
+                    rows = rows.filter(s => s.bookCount >= minBooks);
+                }
 
-                const sortBy = els.teacherSortSelect.value || 'class';
-                rows.sort((a, b) => {
-                    if (sortBy === 'books') {
-                        if (b.bookCount !== a.bookCount) return b.bookCount - a.bookCount;
-                    } else if (sortBy === 'latest') {
-                        if (b.latestDate - a.latestDate !== 0) return b.latestDate - a.latestDate;
+                return applyTeacherSort(rows, {
+                    class: (a, b) => {
+                        const byClass = compareNullableStrings(a.class, b.class);
+                        if (byClass !== 0) return byClass;
+                        const byNo = compareNumbers(a.no, b.no);
+                        if (byNo !== 0) return byNo;
+                        return compareNullableStrings(a.name, b.name);
+                    },
+                    no: (a, b) => {
+                        const byNo = compareNumbers(a.no, b.no);
+                        if (byNo !== 0) return byNo;
+                        return compareNullableStrings(a.class, b.class);
+                    },
+                    name: (a, b) => compareNullableStrings(a.name, b.name),
+                    books: (a, b) => compareNumbers(a.bookCount, b.bookCount),
+                    pages: (a, b) => compareNumbers(a.pageCount, b.pageCount),
+                    latest: (a, b) => a.latestDate - b.latestDate,
+                    _default: (a, b) => {
+                        const byClass = compareNullableStrings(a.class, b.class);
+                        if (byClass !== 0) return byClass;
+                        const byNo = compareNumbers(a.no, b.no);
+                        if (byNo !== 0) return byNo;
+                        return compareNullableStrings(a.name, b.name);
                     }
-                    if (a.class !== b.class) return String(a.class).localeCompare(String(b.class));
-                    if (a.no !== b.no) return parseInt(a.no || 0, 10) - parseInt(b.no || 0, 10);
-                    return String(a.name).localeCompare(String(b.name));
                 });
-                return rows;
             }
 
             function getFilteredBookRows() {
+                const studentQ = (els.teacherFilterBooksStudent.value || '').trim().toLowerCase();
                 const classQ = (els.teacherFilterBooksClass.value || '').trim().toLowerCase();
                 const noQ = (els.teacherFilterBooksClassNo.value || '').trim().toLowerCase();
                 const minReaders = parseInt(els.teacherFilterMinReaders.value, 10);
@@ -1195,11 +1311,12 @@
                 const latestFrom = latestFromRaw ? new Date(latestFromRaw + 'T00:00:00') : null;
 
                 let sourceBooks = allSheetBooks;
-                if (classQ || noQ) {
+                if (studentQ || classQ || noQ) {
                     sourceBooks = sourceBooks.filter(b => {
+                        const studentOk = !studentQ || String(b.studentName || '').toLowerCase().includes(studentQ);
                         const classOk = !classQ || String(b.studentClass || '').toLowerCase().includes(classQ);
                         const noOk = !noQ || String(b.classNo || '').toLowerCase() === noQ;
-                        return classOk && noOk;
+                        return studentOk && classOk && noOk;
                     });
                 }
 
@@ -1211,16 +1328,15 @@
                     rows = rows.filter(b => b.latestDate >= latestFrom);
                 }
 
-                const sortBy = els.teacherSortSelect.value || 'title';
-                rows.sort((a, b) => {
-                    if (sortBy === 'readers') {
-                        if (b.readerCount !== a.readerCount) return b.readerCount - a.readerCount;
-                    } else if (sortBy === 'latest') {
-                        if (b.latestDate - a.latestDate !== 0) return b.latestDate - a.latestDate;
-                    }
-                    return String(a.title).localeCompare(String(b.title), undefined, { sensitivity: 'base' });
+                return applyTeacherSort(rows, {
+                    title: (a, b) => compareNullableStrings(a.title, b.title),
+                    author: (a, b) => compareNullableStrings(a.author, b.author),
+                    readers: (a, b) => compareNumbers(a.readerCount, b.readerCount),
+                    classes: (a, b) => compareNullableStrings(a.classes, b.classes),
+                    students: (a, b) => compareNullableStrings(a.studentsLabel, b.studentsLabel),
+                    latest: (a, b) => a.latestDate - b.latestDate,
+                    _default: (a, b) => compareNullableStrings(a.title, b.title)
                 });
-                return rows;
             }
 
             function renderTeacherDashboard() {
@@ -1240,12 +1356,12 @@
             function renderTeacherStudentsView() {
                 els.teacherTableTitle.textContent = 'Student Leaderboard & Activity';
                 els.teacherTableHeadRow.innerHTML =
-                    '<th class="p-4 font-bold w-20 text-center">Class</th>' +
-                    '<th class="p-4 font-bold w-20 text-center">No.</th>' +
-                    '<th class="p-4 font-bold">Student Name</th>' +
-                    '<th class="p-4 font-bold text-center">Books</th>' +
-                    '<th class="p-4 font-bold text-center">Pages</th>' +
-                    '<th class="p-4 font-bold text-right">Latest Entry</th>';
+                    sortHeaderHtml('Class', 'class', 'w-20 text-center') +
+                    sortHeaderHtml('No.', 'no', 'w-20 text-center') +
+                    sortHeaderHtml('Student Name', 'name', '') +
+                    sortHeaderHtml('Books', 'books', 'text-center') +
+                    sortHeaderHtml('Pages', 'pages', 'text-center') +
+                    sortHeaderHtml('Latest Entry', 'latest', 'text-right');
 
                 const studentArray = getFilteredStudentRows();
                 teacherVisibleRows = studentArray;
@@ -1266,7 +1382,15 @@
                     row.innerHTML =
                         '<td class="p-4 text-center font-bold text-gray-700">' + escapeHtml(student.class) + '</td>' +
                         '<td class="p-4 text-center text-gray-500">' + escapeHtml(student.no) + '</td>' +
-                        '<td class="p-4 font-medium text-gray-800">' + escapeHtml(student.name) + '</td>' +
+                        '<td class="p-4">' +
+                            '<button type="button" class="teacher-student-link font-medium text-primary hover:underline text-left"' +
+                            ' data-name="' + escapeHtml(student.name) + '"' +
+                            ' data-class="' + escapeHtml(student.class) + '"' +
+                            ' data-no="' + escapeHtml(student.no) + '"' +
+                            ' title="Show books for this student">' +
+                            escapeHtml(student.name || '—') +
+                            '</button>' +
+                        '</td>' +
                         '<td class="p-4 text-center"><span class="bg-indigo-100 text-indigo-700 px-2 py-1 rounded font-bold">' + student.bookCount + '</span></td>' +
                         '<td class="p-4 text-center text-gray-600">' + student.pageCount + '</td>' +
                         '<td class="p-4 text-right text-sm text-gray-400">' + latestLabel + '</td>';
@@ -1277,12 +1401,12 @@
             function renderTeacherBooksView() {
                 els.teacherTableTitle.textContent = 'Books Overview';
                 els.teacherTableHeadRow.innerHTML =
-                    '<th class="p-4 font-bold">Book Title</th>' +
-                    '<th class="p-4 font-bold">Author</th>' +
-                    '<th class="p-4 font-bold text-center">Readers</th>' +
-                    '<th class="p-4 font-bold">Classes</th>' +
-                    '<th class="p-4 font-bold">Students</th>' +
-                    '<th class="p-4 font-bold text-right">Latest Entry</th>';
+                    sortHeaderHtml('Book Title', 'title', '') +
+                    sortHeaderHtml('Author', 'author', '') +
+                    sortHeaderHtml('Readers', 'readers', 'text-center') +
+                    sortHeaderHtml('Classes', 'classes', '') +
+                    sortHeaderHtml('Students', 'students', '') +
+                    sortHeaderHtml('Latest Entry', 'latest', 'text-right');
 
                 const bookArray = getFilteredBookRows();
                 teacherVisibleRows = bookArray;
@@ -1438,13 +1562,30 @@
 
                 els.teacherViewStudentsBtn.addEventListener('click', () => setTeacherViewMode('students'));
                 els.teacherViewBooksBtn.addEventListener('click', () => setTeacherViewMode('books'));
-                els.teacherSortSelect.addEventListener('change', renderTeacherDashboard);
                 els.teacherClearFiltersBtn.addEventListener('click', clearTeacherFilters);
+
+                els.teacherTableHeadRow.addEventListener('click', (e) => {
+                    const th = e.target.closest('[data-sort-key]');
+                    if (!th || !els.teacherTableHeadRow.contains(th)) return;
+                    handleTeacherSortClick(th.getAttribute('data-sort-key'));
+                });
+
+                els.teacherTableBody.addEventListener('click', (e) => {
+                    const link = e.target.closest('.teacher-student-link');
+                    if (!link || !els.teacherTableBody.contains(link)) return;
+                    openStudentBooksView({
+                        name: link.getAttribute('data-name') || '',
+                        class: link.getAttribute('data-class') || '',
+                        no: link.getAttribute('data-no') || ''
+                    });
+                });
 
                 [
                     els.teacherFilterBook,
                     els.teacherFilterClass,
                     els.teacherFilterClassNo,
+                    els.teacherFilterMinBooks,
+                    els.teacherFilterBooksStudent,
                     els.teacherFilterBooksClass,
                     els.teacherFilterBooksClassNo,
                     els.teacherFilterMinReaders,
@@ -1453,8 +1594,6 @@
                     input.addEventListener('input', renderTeacherDashboard);
                     input.addEventListener('change', renderTeacherDashboard);
                 });
-
-                populateTeacherSortOptions();
 
                 els.stars.forEach(star => {
                     star.addEventListener('click', (e) => setRating(parseInt(e.target.dataset.rating, 10)));
