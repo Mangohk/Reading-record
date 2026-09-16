@@ -4,6 +4,10 @@ A student reading-log page that appends book entries to a **Google Sheet** throu
 
 No Firebase, no Next.js, no OAuth.
 
+## Page link
+https://mangohk.github.io/Reading-record/
+
+
 ## Visual base
 
 `index.html` keeps the full Desktop Reading Record UX (student login, teacher portal, shelf/list library, book modal, ranks/stats, export, toasts). Firebase was removed; saves go through `ReadingRecordAPI` → Sheets.
