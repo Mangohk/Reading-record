@@ -35,22 +35,62 @@ function requireSpreadsheetId(): string {
   return id;
 }
 
-/**
- * Build an authenticated Sheets API client.
- * Prefers GOOGLE_SERVICE_ACCOUNT_JSON (inline JSON string),
- * else GOOGLE_APPLICATION_CREDENTIALS / GOOGLE_SERVICE_ACCOUNT_PATH (file path).
- */
-async function createSheetsClient(): Promise<SheetsClient> {
-  const scopes = ["https://www.googleapis.com/auth/spreadsheets"];
+type ServiceAccountCredentials = {
+  client_email: string;
+  private_key: string;
+};
 
+function normalizePrivateKey(raw: string): string {
+  // Env files often store newlines as literal \n.
+  return raw.replace(/\\n/g, "\n");
+}
+
+/**
+ * Resolve service-account credentials from env (never invent secrets).
+ * Supported (first match wins):
+ * 1. GOOGLE_SERVICE_ACCOUNT_JSON — inline JSON string
+ * 2. GOOGLE_SERVICE_ACCOUNT_JSON_BASE64 — base64-encoded JSON
+ * 3. GOOGLE_SERVICE_ACCOUNT_EMAIL + GOOGLE_PRIVATE_KEY
+ * 4. GOOGLE_SERVICE_ACCOUNT_PATH or GOOGLE_APPLICATION_CREDENTIALS — key file path
+ */
+function loadServiceAccountCredentials():
+  | { kind: "json"; credentials: ServiceAccountCredentials }
+  | { kind: "file"; keyFile: string } {
   const inlineJson = process.env.GOOGLE_SERVICE_ACCOUNT_JSON?.trim();
   if (inlineJson) {
-    const credentials = JSON.parse(inlineJson) as {
-      client_email: string;
-      private_key: string;
+    const parsed = JSON.parse(inlineJson) as ServiceAccountCredentials;
+    return {
+      kind: "json",
+      credentials: {
+        client_email: parsed.client_email,
+        private_key: normalizePrivateKey(parsed.private_key),
+      },
     };
-    const auth = new google.auth.GoogleAuth({ credentials, scopes });
-    return google.sheets({ version: "v4", auth });
+  }
+
+  const inlineB64 = process.env.GOOGLE_SERVICE_ACCOUNT_JSON_BASE64?.trim();
+  if (inlineB64) {
+    const decoded = Buffer.from(inlineB64, "base64").toString("utf8");
+    const parsed = JSON.parse(decoded) as ServiceAccountCredentials;
+    return {
+      kind: "json",
+      credentials: {
+        client_email: parsed.client_email,
+        private_key: normalizePrivateKey(parsed.private_key),
+      },
+    };
+  }
+
+  const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL?.trim();
+  const privateKey = process.env.GOOGLE_PRIVATE_KEY?.trim();
+  if (email && privateKey) {
+    return {
+      kind: "json",
+      credentials: {
+        client_email: email,
+        private_key: normalizePrivateKey(privateKey),
+      },
+    };
   }
 
   const keyFile =
@@ -58,13 +98,29 @@ async function createSheetsClient(): Promise<SheetsClient> {
     process.env.GOOGLE_APPLICATION_CREDENTIALS?.trim();
 
   if (keyFile) {
-    const auth = new google.auth.GoogleAuth({ keyFile, scopes });
-    return google.sheets({ version: "v4", auth });
+    return { kind: "file", keyFile };
   }
 
   throw new Error(
-    "No Google service account configured. Set GOOGLE_SERVICE_ACCOUNT_JSON or GOOGLE_SERVICE_ACCOUNT_PATH (see .env.example).",
+    "No Google service account configured. Set GOOGLE_SERVICE_ACCOUNT_EMAIL+GOOGLE_PRIVATE_KEY, GOOGLE_SERVICE_ACCOUNT_JSON(_BASE64), or GOOGLE_SERVICE_ACCOUNT_PATH / GOOGLE_APPLICATION_CREDENTIALS (see .env.example).",
   );
+}
+
+/** Build an authenticated Sheets API client from env credentials. */
+async function createSheetsClient(): Promise<SheetsClient> {
+  const scopes = ["https://www.googleapis.com/auth/spreadsheets"];
+  const loaded = loadServiceAccountCredentials();
+
+  if (loaded.kind === "json") {
+    const auth = new google.auth.GoogleAuth({
+      credentials: loaded.credentials,
+      scopes,
+    });
+    return google.sheets({ version: "v4", auth });
+  }
+
+  const auth = new google.auth.GoogleAuth({ keyFile: loaded.keyFile, scopes });
+  return google.sheets({ version: "v4", auth });
 }
 
 function cell(row: string[], index: number): string {

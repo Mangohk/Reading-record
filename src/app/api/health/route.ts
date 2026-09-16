@@ -1,30 +1,32 @@
 import { NextResponse } from "next/server";
 import { getDataAccessLayer } from "@/lib/dal";
 import { BOOTSTRAP_ADMIN_EMAIL } from "@/lib/auth/roles";
+import {
+  hasGoogleOAuthConfigured,
+  hasServiceAccountConfigured,
+} from "@/lib/auth/credentials";
 
 /**
- * Health / connectivity probe.
- * With a shared service account, GET /api/health returns Settings from the sheet.
+ * Health / connectivity probe (public).
+ * With a shared service account, returns Settings from the sheet.
  * Without credentials, returns configuration status (no invented secrets).
  */
 export async function GET() {
   const spreadsheetIdSet = Boolean(process.env.SPREADSHEET_ID?.trim());
-  const hasInlineJson = Boolean(process.env.GOOGLE_SERVICE_ACCOUNT_JSON?.trim());
-  const hasKeyPath = Boolean(
-    process.env.GOOGLE_SERVICE_ACCOUNT_PATH?.trim() ||
-      process.env.GOOGLE_APPLICATION_CREDENTIALS?.trim(),
-  );
+  const serviceAccountConfigured = hasServiceAccountConfigured();
+  const oauthConfigured = hasGoogleOAuthConfigured();
 
   const base = {
     ok: true,
     app: "reading-record",
     bootstrapAdminEmail: BOOTSTRAP_ADMIN_EMAIL,
     spreadsheetIdConfigured: spreadsheetIdSet,
-    serviceAccountConfigured: hasInlineJson || hasKeyPath,
+    serviceAccountConfigured,
+    oauthConfigured,
     dataStore: process.env.DATA_STORE ?? "sheets",
   };
 
-  if (!spreadsheetIdSet || (!hasInlineJson && !hasKeyPath)) {
+  if (!spreadsheetIdSet || !serviceAccountConfigured) {
     return NextResponse.json({
       ...base,
       sheets: {
