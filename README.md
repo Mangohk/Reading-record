@@ -6,11 +6,7 @@ No Firebase, no Next.js, no OAuth.
 
 ## Visual base
 
-`index.html` is adapted from the **Desktop definitive** file:
-
-`/Users/mango/Desktop/my_reading_record_cloud_edition.html`
-
-Full UX preserved: student login, teacher portal, shelf/list library, book modal, ranks/stats, export, toasts. Firebase was removed; saves go through `ReadingRecordAPI` → Sheets.
+`index.html` keeps the full Desktop Reading Record UX (student login, teacher portal, shelf/list library, book modal, ranks/stats, export, toasts). Firebase was removed; saves go through `ReadingRecordAPI` → Sheets.
 
 ## Files
 
