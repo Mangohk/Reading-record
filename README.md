@@ -19,10 +19,10 @@ No Firebase, no Next.js, no OAuth.
 ## Quick start
 
 1. Open `index.html` in a browser (double-click, or any static file server).
-2. Deploy the Apps Script (below) and paste the Web App URL into `reading-api.js`:
+2. `reading-api.js` already points at the deployed Web App:
 
 ```js
-var API_URL = 'https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec';
+var API_URL = 'https://script.google.com/macros/s/AKfycbza6iNOxnJllZTa0YOef3WbUrtxpnHAUijWPn4pzsKjpz_4WhzrWib0c65-bSToKXpA/exec';
 ```
 
 3. Log in as a student, add a book, and confirm a new row appears on the sheet.
@@ -35,7 +35,7 @@ var API_URL = 'https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec';
 4. Type: **Web app**.
 5. Execute as: **Me**.
 6. Who has access: **Anyone**.
-7. Deploy → copy the `/exec` URL → paste into `reading-api.js` as `API_URL`.
+7. Deploy → copy the `/exec` URL → set `API_URL` in `reading-api.js` (already set for the current deployment above).
 
 The script must be owned by (or shared with) an account that can edit the target spreadsheet.
 
@@ -68,4 +68,4 @@ The script must be owned by (or shared with) an account that can edit the target
 - **Teacher dashboard / student refresh:** optional `ReadingRecordAPI.listRecords`; if list fails, local data still shows.
 - **Delete:** local-only. Google Sheets is **append-only** (like high scores); sheet rows are not deleted.
 - Re-saving / editing appends another Sheet row.
-- There are **no API keys or secrets** in these files — only the public Web App URL placeholder.
+- There are **no API keys or secrets** in these files — only the public Web App `/exec` URL (same pattern as teaching-games high scores).

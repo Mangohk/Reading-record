@@ -1,8 +1,8 @@
 (function (global) {
   'use strict';
 
-  // Paste your Apps Script Web App URL after deploy (Anyone access).
-  var API_URL = 'YOUR_APPS_SCRIPT_WEB_APP_URL';
+  // Apps Script Web App URL (Anyone access) — same public /exec pattern as teaching-games high scores.
+  var API_URL = 'https://script.google.com/macros/s/AKfycbza6iNOxnJllZTa0YOef3WbUrtxpnHAUijWPn4pzsKjpz_4WhzrWib0c65-bSToKXpA/exec';
 
   function queryString(params) {
     var parts = [];
