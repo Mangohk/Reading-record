@@ -592,6 +592,17 @@
                 return dt.toISOString().slice(0, 10);
             }
 
+            function parseTimestampMs(value) {
+                if (value == null || value === '') return NaN;
+                if (value instanceof Date) return value.getTime();
+                if (typeof value === 'number') return value;
+                // Apps Script JSON returns ISO strings — Number(iso) is NaN
+                const asNumber = Number(value);
+                if (!isNaN(asNumber) && asNumber > 0) return asNumber;
+                const parsed = new Date(value).getTime();
+                return parsed;
+            }
+
             function activeRecordCutoffMs() {
                 const cutoff = new Date();
                 cutoff.setFullYear(cutoff.getFullYear() - ACTIVE_RECORD_YEARS);
@@ -599,18 +610,19 @@
             }
 
             function isActiveSheetRecord(recOrBook) {
-                const raw = recOrBook && (recOrBook.timestamp != null ? recOrBook.timestamp : recOrBook);
-                const ts = raw instanceof Date ? raw.getTime() : Number(raw);
+                if (!recOrBook || typeof recOrBook !== 'object') return false;
+                const raw = recOrBook.timestamp;
+                const ts = parseTimestampMs(raw);
                 if (!ts || isNaN(ts)) return false;
                 return ts >= activeRecordCutoffMs();
             }
 
             function mapSheetRecord(rec) {
-                const tsDate = rec.timestamp ? new Date(rec.timestamp) : null;
-                const tsMs = tsDate && !isNaN(tsDate.getTime()) ? tsDate.getTime() : Date.now();
+                const tsMs = parseTimestampMs(rec.timestamp);
+                const safeTs = !isNaN(tsMs) && tsMs > 0 ? tsMs : Date.now();
                 return {
-                    docId: 'sheet_' + String(rec.row || tsMs) + '_' + String(rec.book_title || ''),
-                    sheetRow: rec.row != null ? Number(rec.row) : null,
+                    docId: 'sheet_' + String(rec.row || safeTs) + '_' + String(rec.book_title || ''),
+                    sheetRow: rec.row != null && rec.row !== '' ? Number(rec.row) : null,
                     studentName: rec.student_name,
                     studentClass: rec.class_name,
                     classNo: String(rec.class_no == null ? '' : rec.class_no),
@@ -621,15 +633,15 @@
                     dateFinished: formatDateValue(rec.date_finished),
                     rating: Number(rec.rating) || 0,
                     review: rec.review || '',
-                    timestamp: tsMs
+                    timestamp: safeTs
                 };
             }
 
             function mapActiveSheetRecords(records) {
                 return (records || [])
+                    .filter(rec => rec && (rec.book_title || rec.student_name))
                     .filter(isActiveSheetRecord)
-                    .map(mapSheetRecord)
-                    .filter(book => isActiveSheetRecord(book));
+                    .map(mapSheetRecord);
             }
 
             function init() {
