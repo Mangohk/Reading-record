@@ -38,6 +38,22 @@
         ::-webkit-scrollbar-thumb { background: #c7c7c7; border-radius: 5px; }
         ::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
         .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+
+        th.teacher-sort-th {
+            cursor: pointer;
+            user-select: none;
+            white-space: nowrap;
+        }
+        th.teacher-sort-th:hover { color: #4F46E5; }
+        th.teacher-sort-th.is-active { color: #4F46E5; }
+        th.teacher-sort-th .sort-indicator {
+            display: inline-block;
+            margin-left: 0.35rem;
+            font-size: 0.7em;
+            opacity: 0.35;
+            vertical-align: middle;
+        }
+        th.teacher-sort-th.is-active .sort-indicator { opacity: 1; }
     </style>
 </head>
 <body class="text-gray-800 antialiased min-h-screen flex flex-col bg-gray-50 selection:bg-indigo-200 selection:text-indigo-900">
@@ -228,26 +244,85 @@
                    <p class="text-gray-500">Overview from the class Google Sheet</p>
                 </div>
             </div>
-            <div class="flex gap-4 items-center">
+            <div class="flex gap-4 items-center flex-wrap justify-end">
                 <div class="text-right">
                     <div class="text-xs text-gray-500 font-bold uppercase">Total School Pages</div>
                     <div class="text-2xl font-bold text-primary" id="teacherTotalPages">0</div>
                 </div>
                 <button id="teacherExportAllBtn" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl font-bold shadow-md transition-all flex items-center gap-2 transform active:scale-95">
-                    <i class="fa-solid fa-file-excel"></i> Export All Records
+                    <i class="fa-solid fa-file-excel"></i> Export Visible
                 </button>
             </div>
         </div>
+
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 md:p-5 flex flex-col gap-4">
+            <div class="flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
+                <div class="inline-flex rounded-xl border border-gray-200 bg-gray-50 p-1 self-start" role="group" aria-label="Teacher view mode">
+                    <button type="button" id="teacherViewStudentsBtn" class="teacher-view-btn px-4 py-2 rounded-lg text-sm font-bold transition-colors bg-white text-primary shadow-sm" data-view="students">
+                        <i class="fa-solid fa-users mr-1"></i> Students
+                    </button>
+                    <button type="button" id="teacherViewBooksBtn" class="teacher-view-btn px-4 py-2 rounded-lg text-sm font-bold transition-colors text-gray-500 hover:text-gray-700" data-view="books">
+                        <i class="fa-solid fa-book mr-1"></i> Books
+                    </button>
+                </div>
+                <div class="flex items-end gap-3 flex-wrap">
+                    <p class="text-xs text-gray-400 self-center hidden sm:block">Click a column header to sort</p>
+                    <button type="button" id="teacherClearFiltersBtn" class="text-sm font-medium text-gray-500 hover:text-primary px-2 py-2">Clear filters</button>
+                </div>
+            </div>
+
+            <div id="teacherFiltersStudents" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                <div>
+                    <label for="teacherFilterBook" class="block text-xs font-bold text-gray-500 uppercase mb-1">Book title</label>
+                    <input type="text" id="teacherFilterBook" autocomplete="off" placeholder="Match book title…" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none">
+                </div>
+                <div>
+                    <label for="teacherFilterClass" class="block text-xs font-bold text-gray-500 uppercase mb-1">Class</label>
+                    <input type="text" id="teacherFilterClass" autocomplete="off" placeholder="e.g. 4A" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none">
+                </div>
+                <div>
+                    <label for="teacherFilterClassNo" class="block text-xs font-bold text-gray-500 uppercase mb-1">Class No.</label>
+                    <input type="text" id="teacherFilterClassNo" autocomplete="off" placeholder="Optional" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none">
+                </div>
+                <div>
+                    <label for="teacherFilterMinBooks" class="block text-xs font-bold text-gray-500 uppercase mb-1">Min books</label>
+                    <input type="number" id="teacherFilterMinBooks" autocomplete="off" min="1" placeholder="e.g. 3" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none">
+                </div>
+            </div>
+
+            <div id="teacherFiltersBooks" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 hidden">
+                <div>
+                    <label for="teacherFilterBooksStudent" class="block text-xs font-bold text-gray-500 uppercase mb-1">Student name</label>
+                    <input type="text" id="teacherFilterBooksStudent" autocomplete="off" placeholder="Match student…" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none">
+                </div>
+                <div>
+                    <label for="teacherFilterBooksClass" class="block text-xs font-bold text-gray-500 uppercase mb-1">Class</label>
+                    <input type="text" id="teacherFilterBooksClass" autocomplete="off" placeholder="e.g. 4A" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none">
+                </div>
+                <div>
+                    <label for="teacherFilterBooksClassNo" class="block text-xs font-bold text-gray-500 uppercase mb-1">Class No.</label>
+                    <input type="text" id="teacherFilterBooksClassNo" autocomplete="off" placeholder="Optional" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none">
+                </div>
+                <div>
+                    <label for="teacherFilterMinReaders" class="block text-xs font-bold text-gray-500 uppercase mb-1">Min. readers</label>
+                    <input type="number" id="teacherFilterMinReaders" autocomplete="off" min="1" placeholder="e.g. 2" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none">
+                </div>
+                <div>
+                    <label for="teacherFilterLatestFrom" class="block text-xs font-bold text-gray-500 uppercase mb-1">Latest entry from</label>
+                    <input type="date" id="teacherFilterLatestFrom" autocomplete="off" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none">
+                </div>
+            </div>
+        </div>
         
-        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mt-2">
-            <div class="p-4 bg-gray-50 border-b border-gray-100 flex justify-between items-center">
-                <h3 class="font-bold text-gray-700">Student Leaderboard & Activity</h3>
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="p-4 bg-gray-50 border-b border-gray-100 flex justify-between items-center gap-3 flex-wrap">
+                <h3 class="font-bold text-gray-700" id="teacherTableTitle">Student Leaderboard & Activity</h3>
                 <div class="text-sm text-gray-500" id="activeStudentsCount">0 Active Students</div>
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-left text-sm text-gray-600">
                     <thead class="bg-white border-b border-gray-100 text-gray-800">
-                        <tr>
+                        <tr id="teacherTableHeadRow">
                             <th class="p-4 font-bold w-20 text-center">Class</th>
                             <th class="p-4 font-bold w-20 text-center">No.</th>
                             <th class="p-4 font-bold">Student Name</th>
@@ -380,10 +455,17 @@
 
             const USER_AUTH_KEY = 'studentReadingLog_SheetsUser';
             const STUDENT_LOGIN_SUBTITLE = 'Log books to the class Google Sheet.';
+            // Soft-deleted rows use Timestamp −20y; listings hide anything older than 10y.
+            const ACTIVE_RECORD_YEARS = 10;
 
             let currentUser = null;
             let studentLibrary = [];
             let allSheetBooks = [];
+            let teacherViewMode = 'students'; // 'students' | 'books'
+            let teacherVisibleRows = []; // currently displayed aggregated rows (for export)
+            // In-memory only — never persisted to localStorage; reset on load/login
+            let teacherSortKey = 'class';
+            let teacherSortDir = 'asc'; // 'asc' | 'desc'
             let currentViewMode = 'shelf';
             let currentRating = 0;
             let editingId = null;
@@ -444,9 +526,25 @@
                 navAddBtn: document.getElementById('navAddBtn'),
                 emptyAddBtn: document.getElementById('emptyAddBtn'),
                 teacherTableBody: document.getElementById('teacherTableBody'),
+                teacherTableHeadRow: document.getElementById('teacherTableHeadRow'),
+                teacherTableTitle: document.getElementById('teacherTableTitle'),
                 teacherTotalPages: document.getElementById('teacherTotalPages'),
                 activeStudentsCount: document.getElementById('activeStudentsCount'),
                 teacherExportAllBtn: document.getElementById('teacherExportAllBtn'),
+                teacherViewStudentsBtn: document.getElementById('teacherViewStudentsBtn'),
+                teacherViewBooksBtn: document.getElementById('teacherViewBooksBtn'),
+                teacherFiltersStudents: document.getElementById('teacherFiltersStudents'),
+                teacherFiltersBooks: document.getElementById('teacherFiltersBooks'),
+                teacherClearFiltersBtn: document.getElementById('teacherClearFiltersBtn'),
+                teacherFilterBook: document.getElementById('teacherFilterBook'),
+                teacherFilterClass: document.getElementById('teacherFilterClass'),
+                teacherFilterClassNo: document.getElementById('teacherFilterClassNo'),
+                teacherFilterMinBooks: document.getElementById('teacherFilterMinBooks'),
+                teacherFilterBooksStudent: document.getElementById('teacherFilterBooksStudent'),
+                teacherFilterBooksClass: document.getElementById('teacherFilterBooksClass'),
+                teacherFilterBooksClassNo: document.getElementById('teacherFilterBooksClassNo'),
+                teacherFilterMinReaders: document.getElementById('teacherFilterMinReaders'),
+                teacherFilterLatestFrom: document.getElementById('teacherFilterLatestFrom'),
                 exportExcelBtn: document.getElementById('exportExcelBtn'),
                 bookModal: document.getElementById('bookModal'),
                 bookModalContent: document.getElementById('bookModalContent'),
@@ -494,9 +592,37 @@
                 return dt.toISOString().slice(0, 10);
             }
 
+            function parseTimestampMs(value) {
+                if (value == null || value === '') return NaN;
+                if (value instanceof Date) return value.getTime();
+                if (typeof value === 'number') return value;
+                // Apps Script JSON returns ISO strings — Number(iso) is NaN
+                const asNumber = Number(value);
+                if (!isNaN(asNumber) && asNumber > 0) return asNumber;
+                const parsed = new Date(value).getTime();
+                return parsed;
+            }
+
+            function activeRecordCutoffMs() {
+                const cutoff = new Date();
+                cutoff.setFullYear(cutoff.getFullYear() - ACTIVE_RECORD_YEARS);
+                return cutoff.getTime();
+            }
+
+            function isActiveSheetRecord(recOrBook) {
+                if (!recOrBook || typeof recOrBook !== 'object') return false;
+                const raw = recOrBook.timestamp;
+                const ts = parseTimestampMs(raw);
+                if (!ts || isNaN(ts)) return false;
+                return ts >= activeRecordCutoffMs();
+            }
+
             function mapSheetRecord(rec) {
+                const tsMs = parseTimestampMs(rec.timestamp);
+                const safeTs = !isNaN(tsMs) && tsMs > 0 ? tsMs : Date.now();
                 return {
-                    docId: 'sheet_' + String(rec.timestamp) + '_' + String(rec.book_title || ''),
+                    docId: 'sheet_' + String(rec.row || safeTs) + '_' + String(rec.book_title || ''),
+                    sheetRow: rec.row != null && rec.row !== '' ? Number(rec.row) : null,
                     studentName: rec.student_name,
                     studentClass: rec.class_name,
                     classNo: String(rec.class_no == null ? '' : rec.class_no),
@@ -507,8 +633,15 @@
                     dateFinished: formatDateValue(rec.date_finished),
                     rating: Number(rec.rating) || 0,
                     review: rec.review || '',
-                    timestamp: rec.timestamp ? new Date(rec.timestamp).getTime() : Date.now()
+                    timestamp: safeTs
                 };
+            }
+
+            function mapActiveSheetRecords(records) {
+                return (records || [])
+                    .filter(rec => rec && (rec.book_title || rec.student_name))
+                    .filter(isActiveSheetRecord)
+                    .map(mapSheetRecord);
             }
 
             function init() {
@@ -570,6 +703,7 @@
                     els.teacherMain.classList.add('flex');
                     els.appMain.classList.add('hidden');
                     els.appMain.classList.remove('flex');
+                    resetTeacherDashboardState();
                     loadTeacherFromSheet();
                 } else {
                     els.headerTitle.textContent = 'My Reading Record';
@@ -605,7 +739,7 @@
                         limit: 100
                     });
                     if (records && records.length && studentLibrary.length === 0) {
-                        studentLibrary = records.map(mapSheetRecord);
+                        studentLibrary = mapActiveSheetRecords(records);
                         saveLocalLibrary(studentLibrary);
                         updateStudentUI();
                     }
@@ -616,10 +750,10 @@
             }
 
             async function loadTeacherFromSheet() {
-                els.teacherTableBody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-gray-400">Loading student records...</td></tr>';
+                els.teacherTableBody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-gray-400">Loading student records...</td></tr>';
                 try {
                     const records = await ReadingRecordAPI.listRecords({ limit: 200 });
-                    allSheetBooks = (records || []).map(mapSheetRecord);
+                    allSheetBooks = mapActiveSheetRecords(records);
                     renderTeacherDashboard();
                 } catch (err) {
                     console.error('Teacher sheet load failed:', err);
@@ -933,84 +1067,519 @@
                 });
             }
 
-            function renderTeacherDashboard() {
-                els.teacherTableBody.innerHTML = '';
-                let totalSchoolPages = 0;
-                const studentStats = {};
+            function escapeHtml(str) {
+                return String(str == null ? '' : str)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;');
+            }
 
-                allSheetBooks.forEach(book => {
-                    totalSchoolPages += (book.pages || 0);
-                    const key = book.studentClass + '_' + book.classNo;
+            function normalizeTitleKey(title) {
+                return String(title || '').replace(/\s+/g, ' ').trim().toLowerCase();
+            }
+
+            function parseLooseDate(value) {
+                if (!value) return new Date(0);
+                if (value instanceof Date) return isNaN(value.getTime()) ? new Date(0) : value;
+                const d = new Date(value);
+                return isNaN(d.getTime()) ? new Date(0) : d;
+            }
+
+            function resetTeacherDashboardState() {
+                teacherViewMode = 'students';
+                teacherSortKey = 'class';
+                teacherSortDir = 'asc';
+                teacherVisibleRows = [];
+                clearTeacherFilterInputs();
+                applyTeacherViewChrome();
+            }
+
+            function clearTeacherFilterInputs() {
+                els.teacherFilterBook.value = '';
+                els.teacherFilterClass.value = '';
+                els.teacherFilterClassNo.value = '';
+                els.teacherFilterMinBooks.value = '';
+                els.teacherFilterBooksStudent.value = '';
+                els.teacherFilterBooksClass.value = '';
+                els.teacherFilterBooksClassNo.value = '';
+                els.teacherFilterMinReaders.value = '';
+                els.teacherFilterLatestFrom.value = '';
+            }
+
+            function applyTeacherViewChrome() {
+                const isStudents = teacherViewMode === 'students';
+                els.teacherFiltersStudents.classList.toggle('hidden', !isStudents);
+                els.teacherFiltersBooks.classList.toggle('hidden', isStudents);
+                els.teacherViewStudentsBtn.classList.toggle('bg-white', isStudents);
+                els.teacherViewStudentsBtn.classList.toggle('text-primary', isStudents);
+                els.teacherViewStudentsBtn.classList.toggle('shadow-sm', isStudents);
+                els.teacherViewStudentsBtn.classList.toggle('text-gray-500', !isStudents);
+                els.teacherViewBooksBtn.classList.toggle('bg-white', !isStudents);
+                els.teacherViewBooksBtn.classList.toggle('text-primary', !isStudents);
+                els.teacherViewBooksBtn.classList.toggle('shadow-sm', !isStudents);
+                els.teacherViewBooksBtn.classList.toggle('text-gray-500', isStudents);
+            }
+
+            function defaultSortForView(mode) {
+                return mode === 'books'
+                    ? { key: 'latest', dir: 'desc' }
+                    : { key: 'class', dir: 'asc' };
+            }
+
+            function setTeacherViewMode(mode, options) {
+                options = options || {};
+                const nextMode = mode === 'books' ? 'books' : 'students';
+                const modeChanged = teacherViewMode !== nextMode;
+                teacherViewMode = nextMode;
+                if (modeChanged && !options.keepSort) {
+                    const defaults = defaultSortForView(teacherViewMode);
+                    teacherSortKey = defaults.key;
+                    teacherSortDir = defaults.dir;
+                }
+                applyTeacherViewChrome();
+                renderTeacherDashboard();
+            }
+
+            function clearTeacherFilters() {
+                clearTeacherFilterInputs();
+                const defaults = defaultSortForView(teacherViewMode);
+                teacherSortKey = defaults.key;
+                teacherSortDir = defaults.dir;
+                renderTeacherDashboard();
+            }
+
+            function openStudentBooksView(student) {
+                clearTeacherFilterInputs();
+                els.teacherFilterBooksStudent.value = student.name || '';
+                els.teacherFilterBooksClass.value = student.class || '';
+                els.teacherFilterBooksClassNo.value = student.no || '';
+                const defaults = defaultSortForView('books');
+                teacherSortKey = defaults.key;
+                teacherSortDir = defaults.dir;
+                setTeacherViewMode('books', { keepSort: true });
+            }
+
+            function sortHeaderHtml(label, key, extraClass) {
+                const active = teacherSortKey === key;
+                const indicator = active
+                    ? (teacherSortDir === 'asc' ? '▲' : '▼')
+                    : '▲';
+                const classes = 'p-4 font-bold teacher-sort-th'
+                    + (extraClass ? ' ' + extraClass : '')
+                    + (active ? ' is-active' : '');
+                return '<th class="' + classes + '" data-sort-key="' + key + '" title="Sort by ' + escapeHtml(label) + '" scope="col">'
+                    + escapeHtml(label)
+                    + '<span class="sort-indicator" aria-hidden="true">' + indicator + '</span>'
+                    + '</th>';
+            }
+
+            function compareNullableStrings(a, b) {
+                return String(a || '').localeCompare(String(b || ''), undefined, { sensitivity: 'base' });
+            }
+
+            function compareNumbers(a, b) {
+                return (Number(a) || 0) - (Number(b) || 0);
+            }
+
+            function applyTeacherSort(rows, comparators) {
+                const dir = teacherSortDir === 'desc' ? -1 : 1;
+                const primary = comparators[teacherSortKey] || comparators._default;
+                const fallback = comparators._default;
+                rows.sort((a, b) => {
+                    let result = primary(a, b);
+                    if (result === 0 && fallback && fallback !== primary) {
+                        result = fallback(a, b);
+                    }
+                    return result * dir;
+                });
+                return rows;
+            }
+
+            function handleTeacherSortClick(key) {
+                if (!key) return;
+                if (teacherSortKey === key) {
+                    teacherSortDir = teacherSortDir === 'asc' ? 'desc' : 'asc';
+                } else {
+                    teacherSortKey = key;
+                    // Counts / dates start descending; text starts ascending
+                    const descFirst = key === 'books' || key === 'pages' || key === 'readers' || key === 'latest' || key === 'no';
+                    teacherSortDir = descFirst ? 'desc' : 'asc';
+                }
+                renderTeacherDashboard();
+            }
+
+            function buildStudentAggregates(books) {
+                const studentStats = {};
+                books.forEach(book => {
+                    const key = String(book.studentClass || '') + '_' + String(book.classNo || '');
                     if (!studentStats[key]) {
                         studentStats[key] = {
-                            name: book.studentName,
-                            class: book.studentClass,
-                            no: book.classNo,
+                            name: book.studentName || '',
+                            class: book.studentClass || '',
+                            no: book.classNo || '',
                             bookCount: 0,
                             pageCount: 0,
-                            latestDate: new Date(0)
+                            latestDate: new Date(0),
+                            titles: []
                         };
                     }
                     studentStats[key].bookCount++;
                     studentStats[key].pageCount += (book.pages || 0);
-                    const bookDate = new Date(book.dateFinished);
+                    studentStats[key].titles.push(String(book.title || ''));
+                    const bookDate = parseLooseDate(book.dateFinished);
                     if (bookDate > studentStats[key].latestDate) {
                         studentStats[key].latestDate = bookDate;
                     }
+                    if (book.studentName) studentStats[key].name = book.studentName;
                 });
+                return Object.values(studentStats);
+            }
 
+            function buildBookAggregates(books) {
+                const bookStats = {};
+                books.forEach(book => {
+                    const key = normalizeTitleKey(book.title);
+                    if (!key) return;
+                    if (!bookStats[key]) {
+                        bookStats[key] = {
+                            title: book.title || '',
+                            author: book.author || '',
+                            readerKeys: {},
+                            students: [],
+                            classes: {},
+                            readCount: 0,
+                            pageCount: 0,
+                            latestDate: new Date(0)
+                        };
+                    }
+                    const agg = bookStats[key];
+                    agg.readCount++;
+                    agg.pageCount += (book.pages || 0);
+                    if (!agg.author && book.author) agg.author = book.author;
+                    const studentKey = String(book.studentClass || '') + '_' + String(book.classNo || '') + '_' + String(book.studentName || '');
+                    if (!agg.readerKeys[studentKey]) {
+                        agg.readerKeys[studentKey] = true;
+                        agg.students.push({
+                            name: book.studentName || '',
+                            class: book.studentClass || '',
+                            no: book.classNo || ''
+                        });
+                    }
+                    if (book.studentClass) agg.classes[String(book.studentClass)] = true;
+                    const bookDate = parseLooseDate(book.dateFinished);
+                    if (bookDate > agg.latestDate) agg.latestDate = bookDate;
+                });
+                return Object.values(bookStats).map(agg => ({
+                    title: agg.title,
+                    author: agg.author,
+                    readerCount: agg.students.length,
+                    readCount: agg.readCount,
+                    pageCount: agg.pageCount,
+                    classes: Object.keys(agg.classes).sort().join(', '),
+                    studentsLabel: agg.students
+                        .slice()
+                        .sort((a, b) => {
+                            if (a.class !== b.class) return a.class.localeCompare(b.class);
+                            return parseInt(a.no || 0, 10) - parseInt(b.no || 0, 10);
+                        })
+                        .map(s => s.class + '-' + s.no + ' ' + s.name)
+                        .join('; '),
+                    students: agg.students,
+                    latestDate: agg.latestDate
+                }));
+            }
+
+            function getFilteredStudentRows() {
+                const bookQ = (els.teacherFilterBook.value || '').trim().toLowerCase();
+                const classQ = (els.teacherFilterClass.value || '').trim().toLowerCase();
+                const noQ = (els.teacherFilterClassNo.value || '').trim().toLowerCase();
+                const minBooks = parseInt(els.teacherFilterMinBooks.value, 10);
+
+                let sourceBooks = allSheetBooks;
+                if (bookQ) {
+                    sourceBooks = sourceBooks.filter(b => String(b.title || '').toLowerCase().includes(bookQ));
+                }
+
+                let rows = buildStudentAggregates(sourceBooks);
+                if (classQ) {
+                    rows = rows.filter(s => String(s.class || '').toLowerCase().includes(classQ));
+                }
+                if (noQ) {
+                    rows = rows.filter(s => String(s.no || '').toLowerCase() === noQ);
+                }
+                if (!isNaN(minBooks) && minBooks > 0) {
+                    rows = rows.filter(s => s.bookCount >= minBooks);
+                }
+
+                return applyTeacherSort(rows, {
+                    class: (a, b) => {
+                        const byClass = compareNullableStrings(a.class, b.class);
+                        if (byClass !== 0) return byClass;
+                        const byNo = compareNumbers(a.no, b.no);
+                        if (byNo !== 0) return byNo;
+                        return compareNullableStrings(a.name, b.name);
+                    },
+                    no: (a, b) => {
+                        const byNo = compareNumbers(a.no, b.no);
+                        if (byNo !== 0) return byNo;
+                        return compareNullableStrings(a.class, b.class);
+                    },
+                    name: (a, b) => compareNullableStrings(a.name, b.name),
+                    books: (a, b) => compareNumbers(a.bookCount, b.bookCount),
+                    pages: (a, b) => compareNumbers(a.pageCount, b.pageCount),
+                    latest: (a, b) => a.latestDate - b.latestDate,
+                    _default: (a, b) => {
+                        const byClass = compareNullableStrings(a.class, b.class);
+                        if (byClass !== 0) return byClass;
+                        const byNo = compareNumbers(a.no, b.no);
+                        if (byNo !== 0) return byNo;
+                        return compareNullableStrings(a.name, b.name);
+                    }
+                });
+            }
+
+            function getFilteredBookRows() {
+                const studentQ = (els.teacherFilterBooksStudent.value || '').trim().toLowerCase();
+                const classQ = (els.teacherFilterBooksClass.value || '').trim().toLowerCase();
+                const noQ = (els.teacherFilterBooksClassNo.value || '').trim().toLowerCase();
+                const minReaders = parseInt(els.teacherFilterMinReaders.value, 10);
+                const latestFromRaw = els.teacherFilterLatestFrom.value;
+                const latestFrom = latestFromRaw ? new Date(latestFromRaw + 'T00:00:00') : null;
+
+                // Individual sheet records (not title aggregates) so teachers can soft-delete one row.
+                let rows = allSheetBooks
+                    .filter(isActiveSheetRecord)
+                    .map(book => ({
+                        docId: book.docId,
+                        sheetRow: book.sheetRow,
+                        title: book.title,
+                        author: book.author,
+                        studentName: book.studentName,
+                        studentClass: book.studentClass,
+                        classNo: book.classNo,
+                        pages: book.pages,
+                        rating: book.rating,
+                        dateFinished: book.dateFinished,
+                        latestDate: parseLooseDate(book.dateFinished),
+                        timestamp: book.timestamp
+                    }));
+
+                if (studentQ) {
+                    rows = rows.filter(b => String(b.studentName || '').toLowerCase().includes(studentQ));
+                }
+                if (classQ) {
+                    rows = rows.filter(b => String(b.studentClass || '').toLowerCase().includes(classQ));
+                }
+                if (noQ) {
+                    rows = rows.filter(b => String(b.classNo || '').toLowerCase() === noQ);
+                }
+                if (latestFrom && !isNaN(latestFrom.getTime())) {
+                    rows = rows.filter(b => b.latestDate >= latestFrom);
+                }
+
+                if (!isNaN(minReaders) && minReaders > 0) {
+                    const readersByTitle = {};
+                    allSheetBooks.filter(isActiveSheetRecord).forEach(book => {
+                        const key = normalizeTitleKey(book.title);
+                        if (!key) return;
+                        if (!readersByTitle[key]) readersByTitle[key] = {};
+                        const sk = String(book.studentClass || '') + '_' + String(book.classNo || '') + '_' + String(book.studentName || '');
+                        readersByTitle[key][sk] = true;
+                    });
+                    rows = rows.filter(b => {
+                        const key = normalizeTitleKey(b.title);
+                        const count = readersByTitle[key] ? Object.keys(readersByTitle[key]).length : 0;
+                        return count >= minReaders;
+                    });
+                }
+
+                return applyTeacherSort(rows, {
+                    title: (a, b) => compareNullableStrings(a.title, b.title),
+                    author: (a, b) => compareNullableStrings(a.author, b.author),
+                    student: (a, b) => compareNullableStrings(a.studentName, b.studentName),
+                    class: (a, b) => {
+                        const byClass = compareNullableStrings(a.studentClass, b.studentClass);
+                        if (byClass !== 0) return byClass;
+                        return compareNumbers(a.classNo, b.classNo);
+                    },
+                    no: (a, b) => compareNumbers(a.classNo, b.classNo),
+                    latest: (a, b) => a.latestDate - b.latestDate,
+                    _default: (a, b) => a.latestDate - b.latestDate
+                });
+            }
+
+            function renderTeacherDashboard() {
+                els.teacherTableBody.innerHTML = '';
+                teacherVisibleRows = [];
+
+                const totalSchoolPages = allSheetBooks.reduce((sum, book) => sum + (book.pages || 0), 0);
                 els.teacherTotalPages.textContent = totalSchoolPages.toLocaleString();
-                const studentArray = Object.values(studentStats);
-                els.activeStudentsCount.textContent = studentArray.length + ' Active Students';
 
-                studentArray.sort((a, b) => {
-                    if (a.class !== b.class) return a.class.localeCompare(b.class);
-                    if (a.no !== b.no) return parseInt(a.no, 10) - parseInt(b.no, 10);
-                    return a.name.localeCompare(b.name);
-                });
+                if (teacherViewMode === 'books') {
+                    renderTeacherBooksView();
+                } else {
+                    renderTeacherStudentsView();
+                }
+            }
+
+            function renderTeacherStudentsView() {
+                els.teacherTableTitle.textContent = 'Student Leaderboard & Activity';
+                els.teacherTableHeadRow.innerHTML =
+                    sortHeaderHtml('Class', 'class', 'w-20 text-center') +
+                    sortHeaderHtml('No.', 'no', 'w-20 text-center') +
+                    sortHeaderHtml('Student Name', 'name', '') +
+                    sortHeaderHtml('Books', 'books', 'text-center') +
+                    sortHeaderHtml('Pages', 'pages', 'text-center') +
+                    sortHeaderHtml('Latest Entry', 'latest', 'text-right');
+
+                const studentArray = getFilteredStudentRows();
+                teacherVisibleRows = studentArray;
+                els.activeStudentsCount.textContent = studentArray.length + ' student' + (studentArray.length === 1 ? '' : 's') + ' shown';
 
                 if (studentArray.length === 0) {
-                    els.teacherTableBody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-gray-500">No reading records found on the Google Sheet yet.</td></tr>';
+                    const emptyMsg = allSheetBooks.length === 0
+                        ? 'No reading records found on the Google Sheet yet.'
+                        : 'No matching students.';
+                    els.teacherTableBody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-gray-500">' + emptyMsg + '</td></tr>';
                     return;
                 }
 
                 studentArray.forEach(student => {
                     const row = document.createElement('tr');
                     row.className = 'hover:bg-gray-50 transition-colors';
+                    const latestLabel = student.latestDate.getTime() === 0 ? '—' : student.latestDate.toLocaleDateString();
                     row.innerHTML =
-                        '<td class="p-4 text-center font-bold text-gray-700">' + student.class + '</td>' +
-                        '<td class="p-4 text-center text-gray-500">' + student.no + '</td>' +
-                        '<td class="p-4 font-medium text-gray-800">' + student.name + '</td>' +
+                        '<td class="p-4 text-center font-bold text-gray-700">' + escapeHtml(student.class) + '</td>' +
+                        '<td class="p-4 text-center text-gray-500">' + escapeHtml(student.no) + '</td>' +
+                        '<td class="p-4">' +
+                            '<button type="button" class="teacher-student-link font-medium text-primary hover:underline text-left"' +
+                            ' data-name="' + escapeHtml(student.name) + '"' +
+                            ' data-class="' + escapeHtml(student.class) + '"' +
+                            ' data-no="' + escapeHtml(student.no) + '"' +
+                            ' title="Show books for this student">' +
+                            escapeHtml(student.name || '—') +
+                            '</button>' +
+                        '</td>' +
                         '<td class="p-4 text-center"><span class="bg-indigo-100 text-indigo-700 px-2 py-1 rounded font-bold">' + student.bookCount + '</span></td>' +
                         '<td class="p-4 text-center text-gray-600">' + student.pageCount + '</td>' +
-                        '<td class="p-4 text-right text-sm text-gray-400">' + student.latestDate.toLocaleDateString() + '</td>';
+                        '<td class="p-4 text-right text-sm text-gray-400">' + latestLabel + '</td>';
                     els.teacherTableBody.appendChild(row);
                 });
             }
 
-            function exportDataToExcel(dataset, filename) {
-                if (dataset.length === 0) {
+            function renderTeacherBooksView() {
+                els.teacherTableTitle.textContent = 'Book Records';
+                els.teacherTableHeadRow.innerHTML =
+                    sortHeaderHtml('Book Title', 'title', '') +
+                    sortHeaderHtml('Author', 'author', '') +
+                    sortHeaderHtml('Student', 'student', '') +
+                    sortHeaderHtml('Class', 'class', 'text-center') +
+                    sortHeaderHtml('No.', 'no', 'text-center') +
+                    sortHeaderHtml('Date Finished', 'latest', 'text-right') +
+                    '<th class="p-4 font-bold text-center w-14" scope="col" title="Remove record"></th>';
+
+                const bookArray = getFilteredBookRows();
+                teacherVisibleRows = bookArray;
+                els.activeStudentsCount.textContent = bookArray.length + ' record' + (bookArray.length === 1 ? '' : 's') + ' shown';
+
+                if (bookArray.length === 0) {
+                    const emptyMsg = allSheetBooks.length === 0
+                        ? 'No reading records found on the Google Sheet yet.'
+                        : 'No matching book records.';
+                    els.teacherTableBody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-gray-500">' + emptyMsg + '</td></tr>';
+                    return;
+                }
+
+                bookArray.forEach(book => {
+                    const row = document.createElement('tr');
+                    row.className = 'hover:bg-gray-50 transition-colors';
+                    const dateLabel = book.latestDate.getTime() === 0 ? '—' : book.latestDate.toLocaleDateString();
+                    const canDelete = book.sheetRow != null && !isNaN(book.sheetRow);
+                    row.innerHTML =
+                        '<td class="p-4 font-medium text-gray-800">' + escapeHtml(book.title) + '</td>' +
+                        '<td class="p-4 text-gray-600">' + escapeHtml(book.author || '—') + '</td>' +
+                        '<td class="p-4 text-gray-700">' + escapeHtml(book.studentName || '—') + '</td>' +
+                        '<td class="p-4 text-center text-gray-600">' + escapeHtml(book.studentClass || '—') + '</td>' +
+                        '<td class="p-4 text-center text-gray-500">' + escapeHtml(book.classNo || '—') + '</td>' +
+                        '<td class="p-4 text-right text-sm text-gray-400">' + dateLabel + '</td>' +
+                        '<td class="p-4 text-center">' +
+                            (canDelete
+                                ? '<button type="button" class="teacher-soft-delete-btn text-gray-300 hover:text-red-500 transition-colors p-1.5 rounded-lg hover:bg-red-50"'
+                                    + ' data-row="' + escapeHtml(String(book.sheetRow)) + '"'
+                                    + ' data-title="' + escapeHtml(book.title || '') + '"'
+                                    + ' data-student="' + escapeHtml(book.studentName || '') + '"'
+                                    + ' data-doc-id="' + escapeHtml(book.docId || '') + '"'
+                                    + ' title="Remove this record">'
+                                    + '<i class="fa-solid fa-trash-can"></i>'
+                                    + '</button>'
+                                : '<span class="text-gray-200" title="Cannot remove (missing sheet row)">—</span>') +
+                        '</td>';
+                    els.teacherTableBody.appendChild(row);
+                });
+            }
+
+            function confirmSoftDeleteBookRecord(meta) {
+                const label = (meta.title || 'this book') +
+                    (meta.studentName ? ' (' + meta.studentName + ')' : '');
+                showConfirm(
+                    'Remove book record?',
+                    'Hide "' + label + '" from all listings? The sheet row is kept (timestamp moved back 20 years) so it can be recovered later.',
+                    () => softDeleteBookRecord(meta)
+                );
+            }
+
+            async function softDeleteBookRecord(meta) {
+                if (!meta || meta.sheetRow == null) {
+                    showToast('Missing sheet row for this record.', 'error');
+                    return;
+                }
+                try {
+                    await ReadingRecordAPI.softDeleteRecord({
+                        row: meta.sheetRow,
+                        book_title: meta.title,
+                        student_name: meta.studentName
+                    });
+                    allSheetBooks = allSheetBooks.filter(book => {
+                        if (meta.docId && book.docId === meta.docId) return false;
+                        if (book.sheetRow != null && Number(book.sheetRow) === Number(meta.sheetRow)) return false;
+                        return true;
+                    });
+                    renderTeacherDashboard();
+                    showToast('Record removed from listings (kept in sheet for recovery).');
+                } catch (err) {
+                    console.error('Soft delete failed:', err);
+                    showToast((err && err.message) || 'Could not remove record. Redeploy Apps Script if soft_delete is missing.', 'error');
+                }
+            }
+
+            function exportDataToExcel(dataset, filename, columns) {
+                if (!dataset || dataset.length === 0) {
                     showToast('No records to export.', 'error');
                     return;
                 }
 
-                const headers = ['Student Name', 'Class', 'Class No', 'Book Title', 'Author', 'Genre', 'Pages', 'Date Finished', 'Rating', 'Review'];
-                const csvRows = [headers.join(',')];
+                const cols = columns || [
+                    { key: 'studentName', header: 'Student Name' },
+                    { key: 'studentClass', header: 'Class' },
+                    { key: 'classNo', header: 'Class No' },
+                    { key: 'title', header: 'Book Title' },
+                    { key: 'author', header: 'Author' },
+                    { key: 'genre', header: 'Genre' },
+                    { key: 'pages', header: 'Pages' },
+                    { key: 'dateFinished', header: 'Date Finished' },
+                    { key: 'rating', header: 'Rating' },
+                    { key: 'review', header: 'Review' }
+                ];
 
-                dataset.forEach(book => {
-                    const escapeStr = (str) => '"' + String(str || '').replace(/"/g, '""') + '"';
-                    csvRows.push([
-                        escapeStr(book.studentName),
-                        escapeStr(book.studentClass),
-                        escapeStr(book.classNo),
-                        escapeStr(book.title),
-                        escapeStr(book.author),
-                        escapeStr(book.genre),
-                        escapeStr(book.pages),
-                        escapeStr(book.dateFinished),
-                        escapeStr(book.rating),
-                        escapeStr(book.review)
-                    ].join(','));
+                const escapeStr = (str) => '"' + String(str == null ? '' : str).replace(/"/g, '""') + '"';
+                const csvRows = [cols.map(c => escapeStr(c.header)).join(',')];
+
+                dataset.forEach(row => {
+                    csvRows.push(cols.map(c => {
+                        let val = typeof c.value === 'function' ? c.value(row) : row[c.key];
+                        return escapeStr(val);
+                    }).join(','));
                 });
 
                 const blob = new Blob(['\uFEFF' + csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
@@ -1023,6 +1592,33 @@
                 document.body.removeChild(a);
                 URL.revokeObjectURL(url);
                 showToast('Exported to Excel successfully!');
+            }
+
+            function exportTeacherVisibleRows() {
+                if (!teacherVisibleRows.length) {
+                    showToast('No visible rows to export.', 'error');
+                    return;
+                }
+                if (teacherViewMode === 'books') {
+                    exportDataToExcel(teacherVisibleRows, 'Teacher_Books_Visible.csv', [
+                        { key: 'title', header: 'Book Title' },
+                        { key: 'author', header: 'Author' },
+                        { key: 'studentName', header: 'Student Name' },
+                        { key: 'studentClass', header: 'Class' },
+                        { key: 'classNo', header: 'Class No' },
+                        { key: 'pages', header: 'Pages' },
+                        { value: (r) => r.latestDate.getTime() === 0 ? '' : r.latestDate.toISOString().slice(0, 10), header: 'Date Finished' }
+                    ]);
+                } else {
+                    exportDataToExcel(teacherVisibleRows, 'Teacher_Students_Visible.csv', [
+                        { key: 'class', header: 'Class' },
+                        { key: 'no', header: 'Class No' },
+                        { key: 'name', header: 'Student Name' },
+                        { key: 'bookCount', header: 'Books' },
+                        { key: 'pageCount', header: 'Pages' },
+                        { value: (r) => r.latestDate.getTime() === 0 ? '' : r.latestDate.toISOString().slice(0, 10), header: 'Latest Entry' }
+                    ]);
+                }
             }
 
             function attachEventListeners() {
@@ -1077,13 +1673,53 @@
                     const filename = currentUser.studentClass + '_' + currentUser.classNo + '_' + currentUser.name.replace(/\s+/g, '_') + '_Records.csv';
                     exportDataToExcel(studentLibrary, filename);
                 });
-                els.teacherExportAllBtn.addEventListener('click', () => {
-                    const sortedSchoolData = allSheetBooks.slice().sort((a, b) => {
-                        if (a.studentClass !== b.studentClass) return (a.studentClass || '').localeCompare(b.studentClass || '');
-                        if (a.classNo !== b.classNo) return parseInt(a.classNo || 0, 10) - parseInt(b.classNo || 0, 10);
-                        return (a.studentName || '').localeCompare(b.studentName || '');
+                els.teacherExportAllBtn.addEventListener('click', exportTeacherVisibleRows);
+
+                els.teacherViewStudentsBtn.addEventListener('click', () => setTeacherViewMode('students'));
+                els.teacherViewBooksBtn.addEventListener('click', () => setTeacherViewMode('books'));
+                els.teacherClearFiltersBtn.addEventListener('click', clearTeacherFilters);
+
+                els.teacherTableHeadRow.addEventListener('click', (e) => {
+                    const th = e.target.closest('[data-sort-key]');
+                    if (!th || !els.teacherTableHeadRow.contains(th)) return;
+                    handleTeacherSortClick(th.getAttribute('data-sort-key'));
+                });
+
+                els.teacherTableBody.addEventListener('click', (e) => {
+                    const deleteBtn = e.target.closest('.teacher-soft-delete-btn');
+                    if (deleteBtn && els.teacherTableBody.contains(deleteBtn)) {
+                        e.preventDefault();
+                        confirmSoftDeleteBookRecord({
+                            sheetRow: parseInt(deleteBtn.getAttribute('data-row'), 10),
+                            title: deleteBtn.getAttribute('data-title') || '',
+                            studentName: deleteBtn.getAttribute('data-student') || '',
+                            docId: deleteBtn.getAttribute('data-doc-id') || ''
+                        });
+                        return;
+                    }
+
+                    const link = e.target.closest('.teacher-student-link');
+                    if (!link || !els.teacherTableBody.contains(link)) return;
+                    openStudentBooksView({
+                        name: link.getAttribute('data-name') || '',
+                        class: link.getAttribute('data-class') || '',
+                        no: link.getAttribute('data-no') || ''
                     });
-                    exportDataToExcel(sortedSchoolData, 'School_Master_Reading_Records.csv');
+                });
+
+                [
+                    els.teacherFilterBook,
+                    els.teacherFilterClass,
+                    els.teacherFilterClassNo,
+                    els.teacherFilterMinBooks,
+                    els.teacherFilterBooksStudent,
+                    els.teacherFilterBooksClass,
+                    els.teacherFilterBooksClassNo,
+                    els.teacherFilterMinReaders,
+                    els.teacherFilterLatestFrom
+                ].forEach(input => {
+                    input.addEventListener('input', renderTeacherDashboard);
+                    input.addEventListener('change', renderTeacherDashboard);
                 });
 
                 els.stars.forEach(star => {
