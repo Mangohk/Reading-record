@@ -67,10 +67,11 @@ The script must be owned by (or shared with) an account that can edit the target
 
 ## Persistence notes
 
-- **Save:** `handleFormSubmit` → `ReadingRecordAPI.saveRecord({ student_name, class_name, class_no, book_title, author, genre, pages, date_finished, rating, review })`.
-- **Student bookshelf UI:** `localStorage` keyed by class + class no (`readingRecord_library_{class}_{no}`).
-- **Teacher dashboard / student refresh:** optional `ReadingRecordAPI.listRecords`; if list fails, local data still shows.
+- **Save:** `handleFormSubmit` → `ReadingRecordAPI.saveRecord({ student_name, class_name, class_no, book_title, author, genre, pages, date_finished, rating, review })`, then re-fetch via `listRecords`.
+- **Student bookshelf UI:** Google Sheet is the source of truth. On login/refresh, `ReadingRecordAPI.listRecords` for class + class no; empty Sheet results show an empty shelf (stale `localStorage` is not used for display).
+- **Student refresh failure:** toast error; keep previous successful in-memory Sheet data if any, otherwise empty — never fall back to localStorage library cache.
+- **Teacher dashboard:** `ReadingRecordAPI.listRecords`; if list fails, dashboard may be empty (toast).
 - **Teacher soft-delete:** `ReadingRecordAPI.softDeleteRecord({ row, book_title, student_name })` sets the sheet **Timestamp** ~20 years back. Listings (server + client) skip rows older than **10 years**, so soft-deleted rows stay in the sheet for recovery but disappear from the UI.
-- Student modal “delete” remains local-only for the bookshelf cache.
+- Student modal “delete” is session-only hide (Sheet rows stay; refresh may restore them).
 - Re-saving / editing appends another Sheet row.
 - There are **no API keys or secrets** in these files — only the public Web App `/exec` URL (same pattern as teaching-games high scores).

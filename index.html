@@ -709,25 +709,6 @@
                 toastMsg: document.getElementById('toastMsg')
             };
 
-            function libraryStorageKey(user) {
-                return 'readingRecord_library_' + user.studentClass + '_' + user.classNo;
-            }
-
-            function loadLocalLibrary() {
-                if (!currentUser || currentUser.role === 'teacher') return [];
-                try {
-                    const raw = localStorage.getItem(libraryStorageKey(currentUser));
-                    return raw ? JSON.parse(raw) : [];
-                } catch (e) {
-                    return [];
-                }
-            }
-
-            function saveLocalLibrary(books) {
-                if (!currentUser || currentUser.role === 'teacher') return;
-                localStorage.setItem(libraryStorageKey(currentUser), JSON.stringify(books));
-            }
-
             function formatDateValue(value) {
                 if (!value) return '';
                 if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}/.test(value)) return value.slice(0, 10);
@@ -911,6 +892,9 @@
                     els.teacherMain.classList.add('hidden');
                     els.teacherMain.classList.remove('flex');
                     applyTeacherTheme(false);
+                    // Sheet is source of truth — clear any prior in-memory list before fetch.
+                    studentLibrary = [];
+                    updateStudentUI();
                     refreshStudentLibrary();
                 }
             }
@@ -924,22 +908,21 @@
             }
 
             async function refreshStudentLibrary() {
-                studentLibrary = loadLocalLibrary();
-                updateStudentUI();
+                if (!currentUser || currentUser.role !== 'student') return;
                 try {
                     const records = await ReadingRecordAPI.listRecords({
                         class_name: currentUser.studentClass,
                         class_no: currentUser.classNo,
                         limit: 100
                     });
-                    if (records && records.length && studentLibrary.length === 0) {
-                        studentLibrary = mapActiveSheetRecords(records);
-                        saveLocalLibrary(studentLibrary);
-                        updateStudentUI();
-                    }
+                    // Always trust Sheet (including empty) — never prefer localStorage cache.
+                    studentLibrary = mapActiveSheetRecords(records);
+                    updateStudentUI();
                 } catch (err) {
-                    // Keep local bookshelf if Sheet list fails.
-                    console.warn('Sheet list skipped for student:', err);
+                    console.warn('Sheet list failed for student:', err);
+                    showToast('Could not load Google Sheet; bookshelf may be empty.', 'error');
+                    // Keep previous successful in-memory Sheet data if any; do not fall back to localStorage.
+                    updateStudentUI();
                 }
             }
 
@@ -1158,18 +1141,7 @@
                         review: bookData.review
                     });
 
-                    if (editingId) {
-                        const idx = studentLibrary.findIndex(b => b.docId === editingId);
-                        if (idx >= 0) {
-                            studentLibrary[idx] = Object.assign({}, bookData, { docId: editingId });
-                        } else {
-                            studentLibrary.unshift(Object.assign({}, bookData, { docId: 'local_' + Date.now() }));
-                        }
-                    } else {
-                        studentLibrary.unshift(Object.assign({}, bookData, { docId: 'local_' + Date.now() }));
-                    }
-                    saveLocalLibrary(studentLibrary);
-                    updateStudentUI();
+                    await refreshStudentLibrary();
                     showToast(editingId ? 'Book updated & appended to Google Sheet!' : 'Book saved to Google Sheet!');
                     closeModal();
                 } catch (error) {
@@ -1181,17 +1153,16 @@
                 }
             }
 
-            // Delete is local-only: Google Sheets is append-only (like high scores); no cloud delete.
+            // Session-only hide: Google Sheets is append-only (like high scores); no student cloud delete.
             function handleDelete() {
                 showConfirm(
                     'Delete Book',
-                    'Remove this book from your local library? (Google Sheet rows are append-only and will not be deleted.)',
+                    'Hide this book from your bookshelf for now? (Google Sheet rows are append-only and will not be deleted; a refresh may show it again.)',
                     () => {
                         if (!editingId) return;
                         studentLibrary = studentLibrary.filter(b => b.docId !== editingId);
-                        saveLocalLibrary(studentLibrary);
                         updateStudentUI();
-                        showToast('Book removed from local library.');
+                        showToast('Book hidden from bookshelf.');
                         closeModal();
                     }
                 );
